@@ -17,6 +17,11 @@ var FSHADER_SOURCE = `
     gl_FragColor = u_FragColor;
   }`
 
+// Colors
+const BLACK = [0.0, 0.0, 0.0, 1.0];
+const WHITE = [1.0, 1.0, 1.0, 1.0];
+const YELLOW = [1.0, 1.0, 0.0, 1.0];
+
 // Global variables
 let canvas
 let gl
@@ -29,11 +34,15 @@ function setupWebGL() {
   canvas = document.getElementById('webgl');
 
   // Get the rendering context for WebGL
-  gl = getWebGLContext(canvas);
+  //gl = getWebGLContext(canvas)
+  gl = canvas.getContext('webgl', {preserveDrawingBuffer: true});
   if (!gl) {
     console.log('Failed to get the rendering context for WebGL');
     return;
   }
+
+  gl.enable(gl.BLEND)
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 }
 
 function connectVariablesToGLSL() {
@@ -65,13 +74,22 @@ function connectVariablesToGLSL() {
   }
 }
 
+const POINT = 0;
+const TRIANGLE = 1;
+const CIRCLE = 2;
+
 let g_selectedColor = [1.0, 0.0, 0.0, 1.0]; // Default color: red
 let g_selectedSize = 10.0;
+let g_selectedSegments = 10.0; // Default segments for circle
+let g_selectedType = POINT; // Default shape type: point
 
 function addActionsForHtmlUI() {
-  // Button events (Shape type)
-  document.getElementById('green').onclick = function() { g_selectedColor = [0.0, 1.0, 0.0, 1.0]; };
-  document.getElementById('red').onclick = function() { g_selectedColor = [1.0, 0.0, 0.0, 1.0]; };
+  // Button events
+  document.getElementById('part12').onclick = function() { part12Drawing(); };
+
+  document.getElementById('point').onclick = function() { g_selectedType = POINT; };
+  document.getElementById('triangle').onclick = function() { g_selectedType = TRIANGLE; };
+  document.getElementById('circle').onclick = function() { g_selectedType = CIRCLE; };
 
   // Slider events (Shape color)
   document.getElementById('redSlide').addEventListener('mouseup', function() {
@@ -83,12 +101,21 @@ function addActionsForHtmlUI() {
   document.getElementById('blueSlide').addEventListener('mouseup', function() {
     g_selectedColor[2] = this.value / 100;
   });
+  document.getElementById('alphaSlide').addEventListener('mouseup', function() {
+    g_selectedColor[3] = this.value / 100;
+  });
 
   // Slider events (Shape size)
   document.getElementById('sizeSlide').addEventListener('mouseup', function() {
     g_selectedSize = this.value;
   });
 
+  // Slider events (Circle segments)
+  document.getElementById('segmentsSlide').addEventListener('mouseup', function() {
+    g_selectedSegments = this.value;
+  });
+
+  document.getElementById('clear').onclick = function() { g_shapeList = []; renderAllShapes(); };
 }
 
 function main() {
@@ -98,8 +125,9 @@ function main() {
   // Settup actions for the HTML UI
   addActionsForHtmlUI();
 
-  // Register function (event handler) to be called on a mouse press
+  // Register function (event handler) to be called on a mouse move while left click is pressed
   canvas.onmousedown = click;
+  canvas.onmousemove = function(ev) { if(ev.buttons == 1) { click(ev); } };
 
   // Specify the color for clearing <canvas>
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -108,32 +136,32 @@ function main() {
   gl.clear(gl.COLOR_BUFFER_BIT);
 }
 
-var g_points = [];  // The array for the position of a mouse press
-var g_colors = [];  // The array to store the color of a point
-var g_sizes = [];   // The array to store the size of a point
+var g_shapeList = [];  // The array for the shapes in the canvas
 
 function click(ev) {
 
   // Extract the event click and convert it to WebGL coordinates
-  [x, y] = convertCoordinatesEventToGL(ev);
+  let [x, y] = convertCoordinatesEventToGL(ev);
 
-  // Store the coordinates to g_points array
-  g_points.push([x, y]);
-
-  // Store the color to g_colors array
-  g_colors.push(g_selectedColor);
-
-  // Store the size to g_sizes array
-  g_sizes.push(g_selectedSize);
-
-  // // Store the coordinates to g_points array
-  // if (x >= 0.0 && y >= 0.0) {      // First quadrant
-  //   g_colors.push([1.0, 0.0, 0.0, 1.0]);  // Red
-  // } else if (x < 0.0 && y < 0.0) { // Third quadrant
-  //   g_colors.push([0.0, 1.0, 0.0, 1.0]);  // Green
-  // } else {                         // Others
-  //   g_colors.push([1.0, 1.0, 1.0, 1.0]);  // White
-  // }
+  let point;
+  switch(g_selectedType) {
+    case POINT:
+      point = new Point();
+      break;
+    case TRIANGLE:
+      point = new Triangle();
+      break;
+    case CIRCLE:
+      point = new Circle();
+      break;
+    default:
+      console.log('Unknown shape type selected');
+      return;
+  }
+  point.position = [x, y];
+  point.color = g_selectedColor.slice();
+  point.size = g_selectedSize;
+  g_shapeList.push(point);
 
   // Draw every shape that is supposed to be in the canvas
   renderAllShapes();
@@ -156,19 +184,103 @@ function renderAllShapes() {
     // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
-  var len = g_points.length;
+  var len = g_shapeList.length;
   for(var i = 0; i < len; i++) {
-    var xy = g_points[i];
-    var rgba = g_colors[i];
-    var size = g_sizes[i];
-
-    // Pass the position of a point to a_Position variable
-    gl.vertexAttrib3f(a_Position, xy[0], xy[1], 0.0);
-    // Pass the color of a point to u_FragColor variable
-    gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
-    // Pass the size of a point to u_Size variable
-    gl.uniform1f(u_Size, size);
-    // Draw
-    gl.drawArrays(gl.POINTS, 0, 1);
+    g_shapeList[i].render();
   }
+}
+
+// Just for marking offset lines in vertex data, not used for actual offsetting
+const OFFSET = null;
+
+function offsetVertices(vertices, offsetX, offsetY) {
+  if (offsetX === 0 && offsetY === 0) {
+    return vertices;
+  }
+
+  let offsetVertices = new Array(vertices.length);
+  for (let i = 0; i < vertices.length; i += 2) {
+    offsetVertices[i] = vertices[i] + offsetX;
+    offsetVertices[i + 1] = vertices[i + 1] + offsetY;
+  }
+  return offsetVertices;
+}
+
+function part12Drawing() {
+  let vertexData = [
+    [OFFSET, 5, 0],
+
+    // Main Body (Triangles)
+    [YELLOW],
+    [0, 0, -5, 2, -4, 4],
+    [0, 0, -4, 4, 0, 6],
+    [0, 0, 0, 6, 2, 6],
+    [0, 0, 2, 6, 6, 5],
+    [0, 0, 6, 5, 8, 2],
+    [0, 0, 8, 2, 8, -1],
+    [0, 0, 8, -1, 7, -4],
+    [0, 0, 7, -4, 4, -6],
+    [0, 0, 4, -6, 1, -6],
+    [0, 0, 1, -6, -3, -5],
+    [0, 0, -3, -5, -4, -3],
+    // Teeth and white of eye (Triangles)
+    [WHITE],
+    [-5, 2, -5, 0.5, -4, 1.6],
+    [-4, 1.6, -4, 0, -3, 1.2],
+    [-3, 1.2, -3, -0.5, -2, 0.8],
+    [-2, 0.8, -2, -1, -1, 0.4],
+    [0, 2, 0, 4, -2, 2],
+    // Pupil (Triangles)
+    [BLACK],
+    [-1, 2, -1, 2.5, -2, 2],
+
+    [OFFSET, 0, 0],
+
+    // Name (Circles)
+    [WHITE],
+    // A
+    [-10, 2],
+    [-10.5, 1],
+    [-11, 0],
+    [-11.5, -1],
+    [-12, -2],
+    [-9.5, 1],
+    [-9, 0],
+    [-8.5, -1],
+    [-8, -2],
+    [-10.5, -1],
+    [-9.5, -1],
+    // R
+    [-6, 2],
+    [-6, 1],
+    [-6, 0],
+    [-6, -1],
+    [-6, -2],
+    [-5, 2],
+    [-4, 1.5],
+    [-4, 0.5],
+    [-5, 0],
+    [-5, -1],
+    [-4, -2],
+  ];
+
+  let current_color = WHITE;
+  let current_offset = [0.0, 0.0];
+
+  for (let i = 0; i < vertexData.length; i++) {
+    let newShape;
+    if (vertexData[i].length === 1) {
+      current_color = vertexData[i][0];
+      continue;
+    } else if (vertexData[i].length === 3) {
+      current_offset = [vertexData[i][1], vertexData[i][2]];
+      continue;
+    } else if (vertexData[i].length === 2) {
+      newShape = new Circle(offsetVertices(vertexData[i], current_offset[0], current_offset[1]), current_color, 5, 15);
+    } else {
+      newShape = new Triangle(offsetVertices(vertexData[i], current_offset[0], current_offset[1]), current_color, 15);
+    }
+    g_shapeList.push(newShape);
+  }
+  renderAllShapes();
 }
