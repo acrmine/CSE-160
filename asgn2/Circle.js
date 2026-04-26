@@ -4,7 +4,7 @@ class Circle {
     this.position = position;
     this.color = color;
     this.size = size;
-    this.segments = g_selectedSegments;
+    this.segments = 10;
     this.positionDivisor = positionDivisor;
   }
 
@@ -18,7 +18,7 @@ class Circle {
     this.drawCircle(this.position, this.size, this.segments, this.positionDivisor);
   }
 
-  drawCircle(position = [0.0, 0.0], size = 10.0, segments = g_selectedSegments, positionDivisor = 1) {
+  drawCircle(position = [0.0, 0.0], size = 10.0, segments = 10, positionDivisor = 1) {
     var d = size / 200; // Convert size to a suitable scale for the circle
 
     let angleStep = 360 / segments;
