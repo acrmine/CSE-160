@@ -17,16 +17,17 @@ var FSHADER_SOURCE = `
   }`
 
 // Global variables
-let canvas
-let gl
-let a_Position
-let u_FragColor
-let u_ModelMatrix
-let u_GlobalRotateMatrix
+let canvas;
+let gl;
+let a_Position;
+let u_FragColor;
+let u_ModelMatrix;
+let u_GlobalRotateMatrix;
+let u_ProjectionMatrix;
 
 let g_prevMouse = [0, 0];
 let g_globalAngle = [40, 20];
-let g_globalScale = 80;
+let g_globalScale = 3;
 let g_dragSensitivity = 0.7;
 let g_dragging = false;
 
@@ -118,7 +119,7 @@ function main() {
   canvas.onwheel = scroll;
 
   // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 0.0, 0.0, 0.5);
+  gl.clearColor(0.0, 1, 1, 1);
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -200,7 +201,7 @@ function scroll(ev) {
 
 // Draw every shape that is supposed to be in the canvas
 function renderAllShapes() {
-  let scale = 1/160 * g_globalScale;
+  let scale = 1/20 * g_globalScale;
   let globalRotMat = new Matrix4()
     .scale(scale, scale, scale)
     .rotate(g_globalAngle[0], 0, -1, 0)
@@ -212,16 +213,227 @@ function renderAllShapes() {
 
   // main body
   var body = new Cube([1, 1, 1, 1]);
-  body.matrix.scale(0.8, 1.0, 0.6);
+  body.matrix.scale(4, 5, 3);
   body.render();
 
+  var body_back = new Cube([0, 0, 0, 1]);
+  body_back.matrix.setTranslate(0, 0, 0.8);
+  body_back.matrix.scale(4.1, 5.1, 1.6);
+  body_back.render();
+
+  // neck
   var neck1 = new Cube([1,1,1,1]);
-  neck1.matrix.setTranslate(0, 0.6, 0.0);
-  neck1.matrix.scale(0.6, 0.2, 0.5);
+  neck1.matrix.setTranslate(0, 3, 0.0);
+  neck1.matrix.scale(3, 1, 2.5);
   neck1.render();
 
+  var neck1_back = new Cube([0,0,0,1]);
+  neck1_back.matrix.setTranslate(0, 3, 0.675);
+  neck1_back.matrix.scale(3.1, 1.1, 1.35);
+  neck1_back.render();
+
+  var neck2 = new Cube([1,1,1,1]);
+  neck2.matrix.setTranslate(0, 4, -0.2);
+  neck2.matrix.scale(2, 1.2, 2);
+  neck2.render();
+
+  var neck2_back = new Cube([0,0,0,1]);
+  neck2_back.matrix.setTranslate(0, 4, 0.4);
+  neck2_back.matrix.scale(2.1, 1.3, 0.9);
+  neck2_back.render();
+
+  var neck3 = new Cube([0,0,0,1]);
+  neck3.matrix.setTranslate(0, 4.5, -0.4);
+  neck3.matrix.scale(1.9, 1.2, 1.5);
+  neck3.render();
+
+  // head
+  var head = new Cube([0,0,0,1]);
+  head.matrix.setTranslate(0, 5, -1);
+  head.matrix.scale(1.6, 1.5, 2);
+  head.render();
+
+  var right_eye = new Cube([1,1,1,1]);
+  right_eye.matrix.setTranslate(-0.8, 5.3, -1.5);
+  right_eye.matrix.scale(0.3, 0.3, 0.5);
+  right_eye.render();
+
+  var right_pupil = new Cube([0,0,0,1]);
+  right_pupil.matrix.setTranslate(-0.9, 5.3, -1.5);
+  right_pupil.matrix.scale(0.2, 0.1, 0.2);
+  right_pupil.render();
+
+  var left_eye = new Cube([1,1,1,1]);
+  left_eye.matrix.setTranslate(0.8, 5.3, -1.5);
+  left_eye.matrix.scale(0.3, 0.3, 0.5);
+  left_eye.render();
+
+  var left_pupil = new Cube([0,0,0,1]);
+  left_pupil.matrix.setTranslate(0.9, 5.3, -1.5);
+  left_pupil.matrix.scale(0.2, 0.1, 0.2);
+  left_pupil.render(); 
+
+  var beak_top = new HalfPyramid([1,165/255,0,1]);
+  beak_top.matrix.setTranslate(0, 4.8, -2);
+  beak_top.matrix.rotate(180, 0, 1, 0);
+  beak_top.matrix.rotate(90, 1, 0, 0);
+  beak_top.matrix.scale(1, 1.4, 0.8);
+  beak_top.render();
+
+  var beak_bottom = new HalfPyramid([1,165/255,0,1]);
+  beak_bottom.matrix.setTranslate(0, 4.8, -2);
+  beak_bottom.matrix.rotate(-90, 1, 0, 0);
+  beak_bottom.matrix.scale(1, 1.4, 0.3);
+  beak_bottom.render();
+
+  // waist
   var hips = new Cube([1,1,1,1]);
-  neck1.matrix.setTranslate(0, -0.54, 0.0);
-  neck1.matrix.scale(0.7, 0.1, 0.5);
-  neck1.render();
+  hips.matrix.setTranslate(0, -2.52, 0.0);
+  hips.matrix.scale(3.5, 1, 2.5);
+  hips.render();
+
+  var hips_back = new Cube([0,0,0,1]);
+  hips_back.matrix.setTranslate(0, -2.52, 0.8);
+  hips_back.matrix.scale(3.6, 1.1, 1.35);
+  hips_back.render();
+
+  // right arm
+  var right_arm1 = new Cube([0,0,0,1]);
+  right_arm1.matrix.setTranslate(-2.1, 1.4, 0);
+  right_arm1.matrix.scale(0.2, 1.5, 2);
+  right_arm1.render();
+
+  var right_arm1_back = new Cube([1,1,1,1]);
+  right_arm1_back.matrix.setTranslate(-2, 1.4, 0);
+  right_arm1_back.matrix.scale(0.2, 1.4, 1.9);
+  right_arm1_back.render();
+
+  var right_arm2 = new Cube([0,0,0,1]);
+  right_arm2.matrix.setTranslate(-2.1, -0.1, 0);
+  right_arm2.matrix.scale(0.2, 1.5, 2);
+  right_arm2.render();
+
+  var right_arm2_back = new Cube([1,1,1,1]);
+  right_arm2_back.matrix.setTranslate(-2, -0.1, 0);
+  right_arm2_back.matrix.scale(0.2, 1.4, 1.9);
+  right_arm2_back.render();
+
+  var right_arm3 = new Cube([0,0,0,1]);
+  right_arm3.matrix.setTranslate(-2.1, -1.1, 0);
+  right_arm3.matrix.scale(0.2, 1.1, 1.6);
+  right_arm3.render();
+
+  var right_arm3_back = new Cube([1,1,1,1]);
+  right_arm3_back.matrix.setTranslate(-2, -1.1, 0);
+  right_arm3_back.matrix.scale(0.2, 1, 1.5);
+  right_arm3_back.render();
+
+  // left arm
+  var left_arm1 = new Cube([0,0,0,1]);
+  left_arm1.matrix.setTranslate(2.1, 1.4, 0);
+  left_arm1.matrix.scale(0.2, 1.5, 2);
+  left_arm1.render();
+
+  var left_arm1_back = new Cube([1,1,1,1]);
+  left_arm1_back.matrix.setTranslate(2, 1.4, 0);
+  left_arm1_back.matrix.scale(0.2, 1.4, 1.9);
+  left_arm1_back.render();
+
+  var left_arm2 = new Cube([0,0,0,1]);
+  left_arm2.matrix.setTranslate(2.1, -0.1, 0);
+  left_arm2.matrix.scale(0.2, 1.5, 2);
+  left_arm2.render();
+
+  var left_arm2_back = new Cube([1,1,1,1]);
+  left_arm2_back.matrix.setTranslate(2, -0.1, 0);
+  left_arm2_back.matrix.scale(0.2, 1.4, 1.9);
+  left_arm2_back.render();
+
+  var left_arm3 = new Cube([0,0,0,1]);
+  left_arm3.matrix.setTranslate(2.1, -1.1, 0);
+  left_arm3.matrix.scale(0.2, 1.1, 1.6);
+  left_arm3.render();
+
+  var left_arm3_back = new Cube([1,1,1,1]);
+  left_arm3_back.matrix.setTranslate(2, -1.1, 0);
+  left_arm3_back.matrix.scale(0.2, 1, 1.5);
+  left_arm3_back.render();
+
+  // right leg
+  var right_leg1 = new Cube([1,1,1,1]);
+  right_leg1.matrix.setTranslate(-0.8, -3.2, 0);
+  right_leg1.matrix.scale(1.4, 1.4, 1.8);
+  right_leg1.render();
+
+  var right_leg2 = new Cube([1,1,1,1]);
+  right_leg2.matrix.setTranslate(-0.8, -4.2, 0);
+  right_leg2.matrix.scale(1, 1, 1);
+  right_leg2.render();
+
+  var right_foot = new Cube([0.5,0.5,0.5,1]);
+  right_foot.matrix.setTranslate(-0.8, -4.9, -0.4);
+  right_foot.matrix.scale(1.2, 0.5, 1.5);
+  right_foot.render();
+
+  var right_claw1 = new HalfPyramid([0,0,0,1]);
+  right_claw1.matrix.setTranslate(-1.2, -5.1, -1.1);
+  right_claw1.matrix.rotate(180, 0, 1, 0);
+  right_claw1.matrix.rotate(90, 1, 0, 0);
+  right_claw1.matrix.rotate(-10, 0, 0, 1);
+  right_claw1.matrix.scale(0.3, 0.6, 0.8);
+  right_claw1.render();
+
+  var right_claw2 = new HalfPyramid([0,0,0,1]);
+  right_claw2.matrix.setTranslate(-0.8, -5.1, -1.1);
+  right_claw2.matrix.rotate(180, 0, 1, 0);
+  right_claw2.matrix.rotate(90, 1, 0, 0);
+  right_claw2.matrix.scale(0.3, 0.8, 0.8);
+  right_claw2.render();
+
+  var right_claw3 = new HalfPyramid([0,0,0,1]);
+  right_claw3.matrix.setTranslate(-0.4, -5.1, -1.1);
+  right_claw3.matrix.rotate(180, 0, 1, 0);
+  right_claw3.matrix.rotate(90, 1, 0, 0);
+  right_claw3.matrix.rotate(10, 0, 0, 1);
+  right_claw3.matrix.scale(0.3, 0.6, 0.8);
+  right_claw3.render();
+
+  // left leg
+  var left_leg1 = new Cube([1,1,1,1]);
+  left_leg1.matrix.setTranslate(0.8, -3.2, 0);
+  left_leg1.matrix.scale(1.4, 1.4, 1.8);
+  left_leg1.render();
+
+  var left_leg2 = new Cube([1,1,1,1]);
+  left_leg2.matrix.setTranslate(0.8, -4.2, 0);
+  left_leg2.matrix.scale(1, 1, 1);
+  left_leg2.render();
+
+  var left_foot = new Cube([0.5,0.5,0.5,1]);
+  left_foot.matrix.setTranslate(0.8, -4.9, -0.4);
+  left_foot.matrix.scale(1.2, 0.5, 1.5);
+  left_foot.render();
+
+  var left_claw1 = new HalfPyramid([0,0,0,1]);
+  left_claw1.matrix.setTranslate(1.2, -5.1, -1.1);
+  left_claw1.matrix.rotate(180, 0, 1, 0);
+  left_claw1.matrix.rotate(90, 1, 0, 0);
+  left_claw1.matrix.rotate(10, 0, 0, 1);
+  left_claw1.matrix.scale(0.3, 0.6, 0.8);
+  left_claw1.render();
+
+  var left_claw2 = new HalfPyramid([0,0,0,1]);
+  left_claw2.matrix.setTranslate(0.8, -5.1, -1.1);
+  left_claw2.matrix.rotate(180, 0, 1, 0);
+  left_claw2.matrix.rotate(90, 1, 0, 0);
+  left_claw2.matrix.scale(0.3, 0.8, 0.8);
+  left_claw2.render();
+
+  var left_claw3 = new HalfPyramid([0,0,0,1]);
+  left_claw3.matrix.setTranslate(0.4, -5.1, -1.1);
+  left_claw3.matrix.rotate(180, 0, 1, 0);
+  left_claw3.matrix.rotate(90, 1, 0, 0);
+  left_claw3.matrix.rotate(-10, 0, 0, 1);
+  left_claw3.matrix.scale(0.3, 0.6, 0.8);
+  left_claw3.render();
 }
