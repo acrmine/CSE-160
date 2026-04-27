@@ -26,6 +26,7 @@ let u_GlobalRotateMatrix;
 let u_ProjectionMatrix;
 
 let g_prevMouse = [0, 0];
+let g_prevCameraSlide = 0;
 let g_globalAngle = [40, 20];
 let g_globalScale = 3;
 let g_dragSensitivity = 0.7;
@@ -34,6 +35,17 @@ let g_dragging = false;
 let g_prevTime = performance.now();
 let g_frameCount = 0;
 let g_fps = 0;
+
+const g_jointSliders = new Map();
+const g_jointSlidersToAdd = [
+  "beakSlide", 
+  "shoulderSlide", 
+  "midWingSlide", 
+  "wingTipSlide",
+  "thighSlide",
+  "calfSlide",
+  "footSlide",
+];
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -89,19 +101,25 @@ function connectVariablesToGLSL() {
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
 
-let g_selectedColor = [1.0, 0.0, 0.0, 1.0]; // Default color: red
-
 function addActionsForHtmlUI() {
-  // Slider events (Shape color)
-  document.getElementById('redSlide').addEventListener('mouseup', function() {
-    g_selectedColor[0] = this.value / 100;
+  document.getElementById('cameraSlide').addEventListener('mousemove', function(ev) {
+    if (ev.buttons === 1) {
+      let delta = this.value - g_prevCameraSlide;
+      g_prevCameraSlide = this.value;
+      g_globalAngle[0] += delta;
+      renderAllShapes();
+    }
   });
-  document.getElementById('greenSlide').addEventListener('mouseup', function() {
-    g_selectedColor[1] = this.value / 100;
-  });
-  document.getElementById('blueSlide').addEventListener('mouseup', function() {
-    g_selectedColor[2] = this.value / 100;
-  });
+
+  for (let slider of g_jointSlidersToAdd) {
+    g_jointSliders.set(slider, 0);
+    document.getElementById(slider).addEventListener('mousemove', function(ev) {
+      if (ev.buttons === 1) {
+        g_jointSliders.set(slider, this.value);
+        renderAllShapes();
+      }
+    });
+  }
 }
 
 function main() {
@@ -211,6 +229,8 @@ function renderAllShapes() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+
+
   // main body
   var body = new Cube([1, 1, 1, 1]);
   body.matrix.scale(4, 5, 3);
@@ -220,6 +240,8 @@ function renderAllShapes() {
   body_back.matrix.setTranslate(0, 0, 0.8);
   body_back.matrix.scale(4.1, 5.1, 1.6);
   body_back.render();
+
+
 
   // neck
   var neck1 = new Cube([1,1,1,1]);
@@ -246,6 +268,8 @@ function renderAllShapes() {
   neck3.matrix.setTranslate(0, 4.5, -0.4);
   neck3.matrix.scale(1.9, 1.2, 1.5);
   neck3.render();
+
+
 
   // head
   var head = new Cube([0,0,0,1]);
@@ -276,15 +300,17 @@ function renderAllShapes() {
   var beak_top = new HalfPyramid([1,165/255,0,1]);
   beak_top.matrix.setTranslate(0, 4.8, -2);
   beak_top.matrix.rotate(180, 0, 1, 0);
-  beak_top.matrix.rotate(90, 1, 0, 0);
+  beak_top.matrix.rotate(90 - g_jointSliders.get("beakSlide"), 1, 0, 0);
   beak_top.matrix.scale(1, 1.4, 0.8);
   beak_top.render();
 
   var beak_bottom = new HalfPyramid([1,165/255,0,1]);
   beak_bottom.matrix.setTranslate(0, 4.8, -2);
-  beak_bottom.matrix.rotate(-90, 1, 0, 0);
+  beak_bottom.matrix.rotate(-90 - g_jointSliders.get("beakSlide"), 1, 0, 0);
   beak_bottom.matrix.scale(1, 1.4, 0.3);
   beak_bottom.render();
+
+
 
   // waist
   var hips = new Cube([1,1,1,1]);
@@ -297,86 +323,124 @@ function renderAllShapes() {
   hips_back.matrix.scale(3.6, 1.1, 1.35);
   hips_back.render();
 
+
+
   // right arm
   var right_arm1 = new Cube([0,0,0,1]);
-  right_arm1.matrix.setTranslate(-2.1, 1.4, 0);
+  right_arm1.matrix.translate(-2.1, 1.4, 0);
+  right_arm1.matrix.rotateAboutPoint(-g_jointSliders.get("shoulderSlide"), 0, 0, 1, 0, 0.7, 0);
+  var right_arm1_loc = new Matrix4(right_arm1.matrix);
   right_arm1.matrix.scale(0.2, 1.5, 2);
   right_arm1.render();
 
   var right_arm1_back = new Cube([1,1,1,1]);
-  right_arm1_back.matrix.setTranslate(-2, 1.4, 0);
-  right_arm1_back.matrix.scale(0.2, 1.4, 1.9);
+  right_arm1_back.matrix = right_arm1.matrix;
+  right_arm1_back.matrix.translate(0.5, -0.05, 0);
+  right_arm1_back.matrix.scale(0.9, 1, 0.9);
   right_arm1_back.render();
 
   var right_arm2 = new Cube([0,0,0,1]);
-  right_arm2.matrix.setTranslate(-2.1, -0.1, 0);
-  right_arm2.matrix.scale(0.2, 1.5, 2);
+  right_arm2.matrix = right_arm1_loc;
+  right_arm2.matrix.translate(0, -1.5, 0);
+  right_arm2.matrix.rotateAboutPoint(-g_jointSliders.get("midWingSlide"), 0, 0, 1, 0, 0.7, 0);
+  var right_arm2_loc = new Matrix4(right_arm2.matrix);
+  right_arm2.matrix.scale(0.2, 1.5, 1.9);
   right_arm2.render();
 
   var right_arm2_back = new Cube([1,1,1,1]);
-  right_arm2_back.matrix.setTranslate(-2, -0.1, 0);
-  right_arm2_back.matrix.scale(0.2, 1.4, 1.9);
+  right_arm2_back.matrix = right_arm2.matrix;
+  right_arm2_back.matrix.translate(0.5, 0, 0);
+  right_arm2_back.matrix.scale(0.9, 0.9, 0.9);
   right_arm2_back.render();
 
   var right_arm3 = new Cube([0,0,0,1]);
-  right_arm3.matrix.setTranslate(-2.1, -1.1, 0);
-  right_arm3.matrix.scale(0.2, 1.1, 1.6);
+  right_arm3.matrix = right_arm2_loc;
+  right_arm3.matrix.translate(0, -1.2, 0);
+  right_arm3.matrix.rotateAboutPoint(-g_jointSliders.get("wingTipSlide"), 0, 0, 1, 0, 0.7, 0);
+  right_arm3.matrix.scale(0.2, 1.1, 1.3);
   right_arm3.render();
 
   var right_arm3_back = new Cube([1,1,1,1]);
-  right_arm3_back.matrix.setTranslate(-2, -1.1, 0);
-  right_arm3_back.matrix.scale(0.2, 1, 1.5);
+  right_arm3_back.matrix = right_arm3.matrix;
+  right_arm3_back.matrix.translate(0.5, 0.1, 0);
+  right_arm3_back.matrix.scale(0.9, 1, 0.9);
   right_arm3_back.render();
+
+
 
   // left arm
   var left_arm1 = new Cube([0,0,0,1]);
-  left_arm1.matrix.setTranslate(2.1, 1.4, 0);
+  left_arm1.matrix.translate(2.1, 1.4, 0);
+  left_arm1.matrix.rotateAboutPoint(g_jointSliders.get("shoulderSlide"), 0, 0, 1, 0, 0.7, 0);
+  var left_arm1_loc = new Matrix4(left_arm1.matrix);
   left_arm1.matrix.scale(0.2, 1.5, 2);
   left_arm1.render();
 
   var left_arm1_back = new Cube([1,1,1,1]);
-  left_arm1_back.matrix.setTranslate(2, 1.4, 0);
-  left_arm1_back.matrix.scale(0.2, 1.4, 1.9);
+  left_arm1_back.matrix = left_arm1.matrix;
+  left_arm1_back.matrix.translate(-0.5, -0.05, 0);
+  left_arm1_back.matrix.scale(0.9, 1, 0.9);
   left_arm1_back.render();
 
   var left_arm2 = new Cube([0,0,0,1]);
-  left_arm2.matrix.setTranslate(2.1, -0.1, 0);
-  left_arm2.matrix.scale(0.2, 1.5, 2);
+  left_arm2.matrix = left_arm1_loc;
+  left_arm2.matrix.translate(0, -1.5, 0);
+  left_arm2.matrix.rotateAboutPoint(g_jointSliders.get("midWingSlide"), 0, 0, 1, 0, 0.7, 0);
+  var left_arm2_loc = new Matrix4(left_arm2.matrix);
+  left_arm2.matrix.scale(0.2, 1.5, 1.9);
   left_arm2.render();
 
   var left_arm2_back = new Cube([1,1,1,1]);
-  left_arm2_back.matrix.setTranslate(2, -0.1, 0);
-  left_arm2_back.matrix.scale(0.2, 1.4, 1.9);
+  left_arm2_back.matrix = left_arm2.matrix;
+  left_arm2_back.matrix.translate(-0.5, 0, 0);
+  left_arm2_back.matrix.scale(0.9, 0.9, 0.9);
   left_arm2_back.render();
 
   var left_arm3 = new Cube([0,0,0,1]);
-  left_arm3.matrix.setTranslate(2.1, -1.1, 0);
-  left_arm3.matrix.scale(0.2, 1.1, 1.6);
+  left_arm3.matrix = left_arm2_loc;
+  left_arm3.matrix.translate(0, -1.2, 0);
+  left_arm3.matrix.rotateAboutPoint(g_jointSliders.get("wingTipSlide"), 0, 0, 1, 0, 0.7, 0);
+  left_arm3.matrix.scale(0.2, 1.1, 1.3);
   left_arm3.render();
 
   var left_arm3_back = new Cube([1,1,1,1]);
-  left_arm3_back.matrix.setTranslate(2, -1.1, 0);
-  left_arm3_back.matrix.scale(0.2, 1, 1.5);
+  left_arm3_back.matrix = left_arm3.matrix;
+  left_arm3_back.matrix.translate(-0.5, 0.1, 0);
+  left_arm3_back.matrix.scale(0.9, 1, 0.9);
   left_arm3_back.render();
+
+
 
   // right leg
   var right_leg1 = new Cube([1,1,1,1]);
-  right_leg1.matrix.setTranslate(-0.8, -3.2, 0);
+  right_leg1.matrix.translate(-0.8, -3.2, 0);
+  right_leg1.matrix.rotateAboutPoint(-g_jointSliders.get("thighSlide"), 1, 0, 0, 0, 0.7, 0);
+  var right_leg1_loc = new Matrix4(right_leg1.matrix);
   right_leg1.matrix.scale(1.4, 1.4, 1.8);
   right_leg1.render();
 
   var right_leg2 = new Cube([1,1,1,1]);
-  right_leg2.matrix.setTranslate(-0.8, -4.2, 0);
+  right_leg2.matrix = right_leg1_loc;
+  right_leg2.matrix.translate(0, -1, 0);
+  right_leg2.matrix.rotateAboutPoint(-g_jointSliders.get("calfSlide"), 1, 0, 0, 0, 0.7, 0);
+  var right_leg2_loc = new Matrix4(right_leg2.matrix);
   right_leg2.matrix.scale(1, 1, 1);
   right_leg2.render();
 
   var right_foot = new Cube([0.5,0.5,0.5,1]);
-  right_foot.matrix.setTranslate(-0.8, -4.9, -0.4);
-  right_foot.matrix.scale(1.2, 0.5, 1.5);
+  right_foot.matrix = right_leg2_loc;
+  right_foot.matrix.translate(0, -0.6, -0.4);
+  right_foot.matrix.rotateAboutPoint(-g_jointSliders.get("footSlide"), 1, 0, 0, 0, 0.7, 0.5);
+  var right_foot_loc = [
+    new Matrix4(right_foot.matrix), 
+    new Matrix4(right_foot.matrix), 
+    new Matrix4(right_foot.matrix)];
+  right_foot.matrix.scale(1.15, 0.5, 1.55);
   right_foot.render();
 
   var right_claw1 = new HalfPyramid([0,0,0,1]);
-  right_claw1.matrix.setTranslate(-1.2, -5.1, -1.1);
+  right_claw1.matrix = right_foot_loc[0];
+  right_claw1.matrix.translate(-0.35, -0.22, -0.7);
   right_claw1.matrix.rotate(180, 0, 1, 0);
   right_claw1.matrix.rotate(90, 1, 0, 0);
   right_claw1.matrix.rotate(-10, 0, 0, 1);
@@ -384,56 +448,74 @@ function renderAllShapes() {
   right_claw1.render();
 
   var right_claw2 = new HalfPyramid([0,0,0,1]);
-  right_claw2.matrix.setTranslate(-0.8, -5.1, -1.1);
+  right_claw2.matrix = right_foot_loc[1];
+  right_claw2.matrix.translate(0, -0.22, -0.7);
   right_claw2.matrix.rotate(180, 0, 1, 0);
   right_claw2.matrix.rotate(90, 1, 0, 0);
   right_claw2.matrix.scale(0.3, 0.8, 0.8);
   right_claw2.render();
 
   var right_claw3 = new HalfPyramid([0,0,0,1]);
-  right_claw3.matrix.setTranslate(-0.4, -5.1, -1.1);
+  right_claw3.matrix = right_foot_loc[2];
+  right_claw3.matrix.translate(0.35, -0.22, -0.7);
   right_claw3.matrix.rotate(180, 0, 1, 0);
   right_claw3.matrix.rotate(90, 1, 0, 0);
   right_claw3.matrix.rotate(10, 0, 0, 1);
   right_claw3.matrix.scale(0.3, 0.6, 0.8);
   right_claw3.render();
 
+
+
   // left leg
   var left_leg1 = new Cube([1,1,1,1]);
-  left_leg1.matrix.setTranslate(0.8, -3.2, 0);
+  left_leg1.matrix.translate(0.8, -3.2, 0);
+  left_leg1.matrix.rotateAboutPoint(-g_jointSliders.get("thighSlide"), 1, 0, 0, 0, 0.7, 0);
+  var left_leg1_loc = new Matrix4(left_leg1.matrix);
   left_leg1.matrix.scale(1.4, 1.4, 1.8);
   left_leg1.render();
 
   var left_leg2 = new Cube([1,1,1,1]);
-  left_leg2.matrix.setTranslate(0.8, -4.2, 0);
+  left_leg2.matrix = left_leg1_loc;
+  left_leg2.matrix.translate(0, -1, 0);
+  left_leg2.matrix.rotateAboutPoint(-g_jointSliders.get("calfSlide"), 1, 0, 0, 0, 0.7, 0);
+  var left_leg2_loc = new Matrix4(left_leg2.matrix);
   left_leg2.matrix.scale(1, 1, 1);
   left_leg2.render();
 
   var left_foot = new Cube([0.5,0.5,0.5,1]);
-  left_foot.matrix.setTranslate(0.8, -4.9, -0.4);
-  left_foot.matrix.scale(1.2, 0.5, 1.5);
+  left_foot.matrix = left_leg2_loc;
+  left_foot.matrix.translate(0, -0.6, -0.4);
+  left_foot.matrix.rotateAboutPoint(-g_jointSliders.get("footSlide"), 1, 0, 0, 0, 0.7, 0.5);
+  var left_foot_loc = [
+    new Matrix4(left_foot.matrix), 
+    new Matrix4(left_foot.matrix), 
+    new Matrix4(left_foot.matrix)];
+  left_foot.matrix.scale(1.15, 0.5, 1.55);
   left_foot.render();
 
   var left_claw1 = new HalfPyramid([0,0,0,1]);
-  left_claw1.matrix.setTranslate(1.2, -5.1, -1.1);
+  left_claw1.matrix = left_foot_loc[0];
+  left_claw1.matrix.translate(-0.35, -0.22, -0.7);
   left_claw1.matrix.rotate(180, 0, 1, 0);
   left_claw1.matrix.rotate(90, 1, 0, 0);
-  left_claw1.matrix.rotate(10, 0, 0, 1);
+  left_claw1.matrix.rotate(-10, 0, 0, 1);
   left_claw1.matrix.scale(0.3, 0.6, 0.8);
   left_claw1.render();
 
   var left_claw2 = new HalfPyramid([0,0,0,1]);
-  left_claw2.matrix.setTranslate(0.8, -5.1, -1.1);
+  left_claw2.matrix = left_foot_loc[1];
+  left_claw2.matrix.translate(0, -0.22, -0.7);
   left_claw2.matrix.rotate(180, 0, 1, 0);
   left_claw2.matrix.rotate(90, 1, 0, 0);
   left_claw2.matrix.scale(0.3, 0.8, 0.8);
   left_claw2.render();
 
   var left_claw3 = new HalfPyramid([0,0,0,1]);
-  left_claw3.matrix.setTranslate(0.4, -5.1, -1.1);
+  left_claw3.matrix = left_foot_loc[2];
+  left_claw3.matrix.translate(0.35, -0.22, -0.7);
   left_claw3.matrix.rotate(180, 0, 1, 0);
   left_claw3.matrix.rotate(90, 1, 0, 0);
-  left_claw3.matrix.rotate(-10, 0, 0, 1);
+  left_claw3.matrix.rotate(10, 0, 0, 1);
   left_claw3.matrix.scale(0.3, 0.6, 0.8);
   left_claw3.render();
 }

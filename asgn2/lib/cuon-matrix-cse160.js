@@ -754,6 +754,26 @@ class Matrix4 {
     };
 
     /**
+     * Rotates the matrix around the given point in its local space.
+     * The vector of rotation axis may not be normalized.
+     * @param angle The angle of rotation (degrees)
+     * @param x The X coordinate of vector of rotation axis.
+     * @param y The Y coordinate of vector of rotation axis.
+     * @param z The Z coordinate of vector of rotation axis.
+     * @param px The X coordinate of the point which is the center of rotation.
+     * @param py The Y coordinate of the point which is the center of rotation.
+     * @param pz The Z coordinate of the point which is the center of rotation.
+     * @returns this
+     */
+    rotateAboutPoint(angle, x, y, z, px, py, pz) {
+      var m = new Matrix4();
+      m.setTranslate(px, py, pz);
+      m.rotate(angle, x, y, z);
+      m.translate(-px, -py, -pz);
+      return this.concat(m);
+    }
+
+    /**
      * Set the viewing matrix.
      * @param eyeX, eyeY, eyeZ The position of the eye point.
      * @param centerX, centerY, centerZ The position of the reference point.
