@@ -15,6 +15,9 @@
       <span id="fps">FPS: 0</span>
     </p>
     <p>
+      Swimming Animation <button id="playSwimming">Play</button><button id="stopSwimming">Stop</button>
+    </p>
+    <p>
       Camera Y Rotation <input type="range" min="0" max="360" value="0" class="slider" id="cameraSlide">
     </p>
     <p>
@@ -27,10 +30,16 @@
       Wing Tip <input type="range" min="0" max="30" value="0" class="slider" id="wingTipSlide"><br>
     </p>
     <p>
-      <br> <b>Leg Control</b> <br>
-      Thigh <input type="range" min="-30" max="30" value="0" class="slider" id="thighSlide"><br>
-      Calf <input type="range" min="-30" max="30" value="0" class="slider" id="calfSlide"><br>
-      Foot <input type="range" min="-20" max="20" value="0" class="slider" id="footSlide"><br>
+      <br> <b>Right Leg Control</b> <br>
+      Thigh <input type="range" min="-30" max="30" value="0" class="slider" id="rightThighSlide"><br>
+      Calf <input type="range" min="-30" max="30" value="0" class="slider" id="rightCalfSlide"><br>
+      Foot <input type="range" min="-20" max="20" value="0" class="slider" id="rightFootSlide"><br>
+    </p>
+    <p>
+      <br> <b>Left Leg Control</b> <br>
+      Thigh <input type="range" min="-30" max="30" value="0" class="slider" id="leftThighSlide"><br>
+      Calf <input type="range" min="-30" max="30" value="0" class="slider" id="leftCalfSlide"><br>
+      Foot <input type="range" min="-20" max="20" value="0" class="slider" id="leftFootSlide"><br>
     </p>
 
     <script src="lib/cuon-matrix-cse160.js"></script>

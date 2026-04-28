@@ -2,8 +2,17 @@ class Cube {
   constructor(color = [1.0, 1.0, 1.0, 1.0]) {
     this.type = 'cube';
     this.color = color;
+    this.scale = [1.0, 1.0, 1.0];
 
     this.matrix = new Matrix4();
+  }
+
+  setScale(x, y, z) {
+    this.scale = [x, y, z];
+  }
+
+  scaleMatrix() {
+    this.matrix.scale(this.scale[0], this.scale[1], this.scale[2]);
   }
 
   render() {
