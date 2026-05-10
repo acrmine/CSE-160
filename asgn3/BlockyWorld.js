@@ -2,33 +2,56 @@
 // Vertex shader program
 var VSHADER_SOURCE = `
   attribute vec4 a_Position;
+  attribute vec2 a_UV;
+  varying vec2 v_UV;
   uniform mat4 u_ModelMatrix;
   uniform mat4 u_GlobalRotateMatrix;
+  uniform mat4 u_ViewMatrix;
+  uniform mat4 u_ProjectionMatrix;
   void main() {
-    gl_Position = u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * u_ModelMatrix * a_Position;
+    v_UV = a_UV;
   }`
 
 // Fragment shader program
 var FSHADER_SOURCE = `
   precision mediump float;
+  varying vec2 v_UV;
   uniform vec4 u_FragColor;
+  uniform int u_whichTexture;
+  uniform sampler2D u_Sampler0;
   void main() {
-    gl_FragColor = u_FragColor;
+    if (u_whichTexture == -2) {
+      gl_FragColor = u_FragColor;
+    } else if (u_whichTexture == -1) {
+      gl_FragColor = vec4(v_UV, 1.0, 1.0);
+    } else if (u_whichTexture == 0) {
+      gl_FragColor = texture2D(u_Sampler0, v_UV);
+    } else {
+      gl_FragColor = vec4(1, 0.2, 0.2, 1);
+    }
   }`
 
 // Global variables
 let canvas;
 let gl;
 let a_Position;
+let a_UV;
 let u_FragColor;
 let u_ModelMatrix;
 let u_GlobalRotateMatrix;
+let u_ViewMatrix;
 let u_ProjectionMatrix;
+let u_whichTexture;
+let u_Sampler0;
 
 let g_prevMouse = [0, 0];
 let g_prevCameraSlide = 0;
-let g_globalAngle = [40, 20];
-let g_globalScale = 3;
+let g_globalAngle = [0, 0];
+let g_eye = [0, 0, 8];
+let g_at = [0, 0, 0];
+let g_up = [0, 1, 0];
+let g_globalScale = 1;
 let g_dragSensitivity = 0.7;
 let g_dragging = false;
 
@@ -83,6 +106,13 @@ function connectVariablesToGLSL() {
     return;
   }
 
+  // Get the storage location of a_UV
+   a_UV = gl.getAttribLocation(gl.program, 'a_UV');
+  if (a_UV < 0) {
+    console.log('Failed to get the storage location of a_UV');
+    return;
+  }
+
   // Get the storage location of u_FragColor
   u_FragColor = gl.getUniformLocation(gl.program, 'u_FragColor');
   if (!u_FragColor) {
@@ -104,10 +134,64 @@ function connectVariablesToGLSL() {
     return;
   }
 
+  // Get the storage location of u_ViewMatrix
+  u_ViewMatrix = gl.getUniformLocation(gl.program, 'u_ViewMatrix');
+  if (!u_ViewMatrix) {
+    console.log('Failed to get the storage location of u_ViewMatrix');
+    return;
+  }
+
+  // Get the storage location of u_ProjectionMatrix
+  u_ProjectionMatrix = gl.getUniformLocation(gl.program, 'u_ProjectionMatrix');
+  if (!u_ProjectionMatrix) {
+    console.log('Failed to get the storage location of u_ProjectionMatrix');
+    return;
+  }
+
+  // Get the storage location of u_whichTexture
+  u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
+  if (!u_whichTexture) {
+    console.log('Failed to get the storage location of u_whichTexture');
+    return;
+  }
+
+  u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+  if (!u_Sampler0) {
+    console.log('Failed to get the storage location of u_Sampler0');
+    return false;
+  }
+
   // Give u_ModelMatrix an identity matrix
   var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
+
+function initTextures() {
+  let image = new Image();
+  if (!image) {
+    console.log('Failed to create the image object');
+    return false;
+  }
+  image.onload = function() { sendImageToTEXTURE0(image); };
+  image.src = 'imgs/bark.png';
+
+  return true;
+}
+
+function sendImageToTEXTURE0(image) {
+  let texture = gl.createTexture();
+  if (!texture) {
+    console.log('Failed to create the texture object');
+    return false;
+  }
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.uniform1i(u_Sampler0, 0);
+} 
 
 function addActionsForHtmlUI() {
   document.getElementById('playSwimming').addEventListener('click', function() { animationPlaying = true; });
@@ -159,8 +243,10 @@ function main() {
   canvas.onmouseleave = exitCanvas;
   canvas.onwheel = scroll;
 
+  initTextures();
+
   // Specify the color for clearing <canvas>
-  gl.clearColor(0.0, 1, 1, 1);
+  gl.clearColor(0, 1, 1, 1);
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -247,18 +333,6 @@ function scroll(ev) {
 
 // Draw every shape that is supposed to be in the canvas
 function buildPenguinShapes() {
-  let scale = 1/20 * g_globalScale;
-  let globalRotMat = new Matrix4()
-    .scale(scale, scale, scale)
-    .rotate(g_globalAngle[0], 0, -1, 0)
-    .rotate(g_globalAngle[1], -1, 0, 0);
-  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
-
-  // Clear <canvas>
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-
-
   // main body
   var body = new Cube([1, 1, 1, 1]);
   body.setScale(4, 5, 3);
@@ -591,6 +665,23 @@ function scalePenguinShapes() {
 }
 
 function renderAllShapes() {
+
+  let projMatrix = new Matrix4().setPerspective(90, canvas.width/canvas.height, 0.1, 100);
+  gl.uniformMatrix4fv(u_ProjectionMatrix, false, projMatrix.elements);
+
+  let viewMatrix = new Matrix4().setLookAt(g_eye[0],g_eye[1],g_eye[2],g_at[0],g_at[1],g_at[2],g_up[0],g_up[1],g_up[2]); // (eye, at, up)
+  gl.uniformMatrix4fv(u_ViewMatrix, false, viewMatrix.elements);
+
+  let scale = g_globalScale;
+  let globalRotMat = new Matrix4()
+    .scale(scale, scale, scale)
+    .rotate(g_globalAngle[0], 0, 1, 0)
+    .rotate(g_globalAngle[1], -1, 0, 0);
+  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
+
+  // Clear <canvas>
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
   for (let shape of penguinShapes.values()) {
     shape.render();
   }
