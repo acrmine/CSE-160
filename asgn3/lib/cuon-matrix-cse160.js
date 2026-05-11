@@ -100,7 +100,7 @@ class Vector3 {
       * Calcualte the dot product between self and other.
       * @return scalar
       */
-    static dot_self(other) {
+    dot_self(other) {
         let d = 0; 
         for (let i = 0; i < this.elements.length; i++) {
             d += this.elements[i] * other.elements[i];
@@ -126,7 +126,7 @@ class Vector3 {
       * Calcualte the cross product between self and other.
       * @return new vector
       */
-    static cross_self(other) {
+    cross_self(other) {
         let v3 = new Vector3([
             this.elements[1] * other.elements[2] - this.elements[2] * other.elements[1],
             this.elements[2] * other.elements[0] - this.elements[0] * other.elements[2],

@@ -2,7 +2,7 @@ class HalfPyramid extends Shape{
   constructor(color) {
     super(color);
     this.type = 'halfPyramid';
-    this.textureNum = 0;
+    this.textureMode = 0;
   }
 
   render() {

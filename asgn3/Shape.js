@@ -3,7 +3,8 @@ class Shape {
     this.type = 'generic';
     this.color = color;
     this.scale = [1, 1, 1];
-    this.textureNum = -1;
+    this.textureMode = 0;
+    this.texture = 'bark';
 
     this.matrix = new Matrix4();
   }
@@ -19,7 +20,9 @@ class Shape {
   // This function is meant to be overridden by subclasses.
   // It should contain the code to draw the shape.
   render() {
-    gl.uniform1i(u_whichTexture, this.textureNum);
+    gl.uniform1i(u_textureMode, this.textureMode);
+    console.log(`Rendering ${this.type} with texture mode ${this.textureMode} and texture ${this.texture}`);
+    gl.uniform1i(u_textureIndex, g_textures.get(this.texture));
   }
 }
 

@@ -2,7 +2,8 @@ class Cube extends Shape {
   constructor(color) {
     super(color);
     this.type = 'cube';
-    this.textureNum = -2;
+    this.textureMode = 0;
+    this.texture = 'bark';
   }
 
   render() {
