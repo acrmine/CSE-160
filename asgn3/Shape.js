@@ -1,10 +1,14 @@
+let g_vertices = [];
+let g_uvs = [];
+let g_vertexBuffer;
+let g_uvBuffer;
+
 class Shape {
   constructor(color = [1, 1, 0, 1]) {
     this.type = 'generic';
     this.color = color;
     this.scale = [1, 1, 1];
     this.textureMode = 0;
-    this.texture = 'bark';
 
     this.matrix = new Matrix4();
   }
@@ -21,8 +25,6 @@ class Shape {
   // It should contain the code to draw the shape.
   render() {
     gl.uniform1i(u_textureMode, this.textureMode);
-    console.log(`Rendering ${this.type} with texture mode ${this.textureMode} and texture ${this.texture}`);
-    gl.uniform1i(u_textureIndex, g_textures.get(this.texture));
   }
 }
 
@@ -78,4 +80,25 @@ function drawTriangle3DUV(vertices, uv) {
     gl.enableVertexAttribArray(a_UV);
 
     gl.drawArrays(gl.TRIANGLES, 0, n); // Draw the triangle
+}
+
+function renderBuffers() {
+    if (!g_vertexBuffer) {
+        g_vertexBuffer = gl.createBuffer();
+    }
+    if (!g_uvBuffer) {
+        g_uvBuffer = gl.createBuffer();
+    }
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, g_vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g_vertices), gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(a_Position, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_Position);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, g_uvBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(g_uvs), gl.DYNAMIC_DRAW);
+    gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(a_UV);
+
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
 }

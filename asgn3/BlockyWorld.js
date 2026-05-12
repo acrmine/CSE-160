@@ -18,19 +18,17 @@ var FSHADER_SOURCE = `
   varying vec2 v_UV;
   uniform vec4 u_FragColor;
   uniform int u_textureMode;
-  uniform int u_textureIndex;
-  uniform sampler2D u_Textures[4];
+  uniform sampler2D u_Sampler0;
+  uniform sampler2D u_Sampler1;
   void main() {
     if (u_textureMode == -2) {
       gl_FragColor = u_FragColor;
     } else if (u_textureMode == -1) {
       gl_FragColor = vec4(v_UV, 1.0, 1.0);
     } else if (u_textureMode == 0) {
-      for (int i = 0; i < 10; i++) {
-        if (i == u_textureIndex) {
-          gl_FragColor = texture2D(u_Textures[i], v_UV);
-        }
-      }
+      gl_FragColor = texture2D(u_Sampler0, v_UV);
+    } else if (u_textureMode == 1) {
+      gl_FragColor = texture2D(u_Sampler1, v_UV);
     } else {
       gl_FragColor = vec4(1, 0.2, 0.2, 1);
     }
@@ -46,22 +44,52 @@ let u_ModelMatrix;
 let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_textureMode;
-let u_textureIndex;
-let u_Textures;
+let u_Sampler0;
+let u_Sampler1;
 
-let g_mouseSensitivity = 0.7;
 let g_camera = new Camera();
-let g_levelObjects = new Map();
-
-let g_textureLocations = {
-  "green_checker": "imgs/texture_08.png",
-  "bark": "imgs/bark.png",
-}
-let g_textures = new Map();
+let g_levelObjects = [];
 
 let g_prevTime = performance.now();
 let g_frameCount = 0;
 let g_fps = 0;
+
+// X in the array will place the player there
+let X = "PlayerSpawn"
+let level1 = [
+  [1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,4,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,4,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,0,0,0,1,0,0,X,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,4,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,4,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
+  [1,1,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+]
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -133,17 +161,15 @@ function connectVariablesToGLSL() {
     return;
   }
 
-  u_textureIndex = gl.getUniformLocation(gl.program, 'u_textureIndex');
-  if (!u_textureIndex) {
-    console.log('Failed to get the storage location of u_textureIndex');
-    return false;
+  u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
+  u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
+  if (!u_Sampler0) {
+    console.log('Failed to get the storage location of u_Sampler0');
+    return;
   }
-  gl.uniform1i(u_textureIndex, 2);
-
-  u_Textures = gl.getUniformLocation(gl.program, 'u_Textures');
-  if (!u_Textures) {
-    console.log('Failed to get the storage location of u_Textures');
-    return false;
+  if (!u_Sampler1) {
+    console.log('Failed to get the storage location of u_Sampler1');
+    return;
   }
 
   // Give u_ModelMatrix an identity matrix
@@ -152,63 +178,37 @@ function connectVariablesToGLSL() {
 }
 
 function initTextures() {
-  let num = 0;
-  let loadedTextureNums = [];
-  for (const [name, url] of Object.entries(g_textureLocations)) {
-    console.log(`Loading texture: ${name} from ${url}`);
-    let image = new Image();
-    if (!image) {
-      console.log('Failed to create the' + name + 'image object');
-      return false;
-    }
+  let image0 = new Image();
+  image0.onload = function() { sendImageToTEXTURE0(image0); };
+  image0.src = 'imgs/bark.png';
 
-    image.onload = function() {
-      sendImageToTEXTUREn(image, num);
-      g_textures.set(name, num);
-    };
-    loadedTextureNums.push(num);
-    num++;
-    image.src = url;
-  }
-  gl.uniform1i(u_Textures, loadedTextureNums);
+  let image1 = new Image();
+  image1.onload = function() { sendImageToTEXTURE1(image1); };
+  image1.src = 'imgs/texture_08.png';
 
   return true;
-  // let image = new Image();
-  // if (!image) {
-  //   console.log('Failed to create the image object');
-  //   return false;
-  // }
-  // image.onload = function() { sendImageToTEXTURE0(image); };
-  // image.src = 'imgs/bark.png';
 }
 
-// function sendImageToTEXTURE0(image) {
-//   let texture = gl.createTexture();
-//   if (!texture) {
-//     console.log('Failed to create the texture object');
-//     return false;
-//   }
-
-//   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-//   gl.activeTexture(gl.TEXTURE0);
-//   gl.bindTexture(gl.TEXTURE_2D, texture);
-//   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-//   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-//   gl.uniform1i(u_Sampler0, 0);
-// } 
-
-function sendImageToTEXTUREn(image, n) {
-  let texture = gl.createTexture();
-  if (!texture) {
-    console.log('Failed to create texture' + n.toString() + ' object');
-    return false;
-  }
+function sendImageToTEXTURE0(image) {
+  let texture0 = gl.createTexture();
 
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
-  gl.activeTexture(gl['TEXTURE' + n.toString()]);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, texture0);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.uniform1i(u_Sampler0, 0);
+}
+
+function sendImageToTEXTURE1(image) {
+  let texture1 = gl.createTexture();
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1); // Flip the image's y axis
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, texture1);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  gl.uniform1i(u_Sampler1, 1);
 } 
 
 function addActionsForHtmlUI() {
@@ -224,6 +224,31 @@ function keydown(ev) {
     g_camera.left();
   } else if (ev.key === 'd') {
     g_camera.right();
+  } 
+  
+  else if (ev.key === 'q') {
+    g_camera.turnHorizontal(15);
+  } else if (ev.key === 'e') {
+    g_camera.turnHorizontal(-15);
+  } 
+  
+  else if (ev.key === 'Escape') {
+    document.exitPointerLock();
+  }
+}
+
+function click(ev) {
+  try {
+    canvas.requestPointerLock({ unadjustedMovement: true });
+  } catch (err) {
+    console.log('Failed to lock pointer:', err);
+  }
+}
+
+function mousemove(ev) {
+  if (document.pointerLockElement === canvas) {
+    g_camera.turnHorizontal(-ev.movementX);
+    g_camera.turnVertical(-ev.movementY);
   }
 }
 
@@ -233,10 +258,13 @@ function main() {
 
   // Settup actions for the HTML UI
   addActionsForHtmlUI();
+  buildLevel(level1);
 
-  buildLevelStart();
+  canvas.addEventListener('click', click);
+  document.addEventListener('mousemove', mousemove);
 
   document.onkeydown = keydown;
+
   initTextures();
 
   // Specify the color for clearing <canvas>
@@ -270,13 +298,45 @@ function updateFPS(currTime) {
 }
 requestAnimationFrame(updateFPS);
 
-function buildLevelStart() {
-  let floor = new Cube([1, 0, 0, 1]);
-  floor.matrix.translate(0, -0.75, 0);
-  floor.matrix.scale(10, 0, 10);
-  floor.render();
+function buildLevel(levelData) {
+  let largestRowLength = 0;
+  for (let z = 0; z < levelData.length; z++) {
+    let rowLength = levelData[z].length;
+    if (rowLength > largestRowLength) {
+      largestRowLength = rowLength;
+    }
+    for (let x = 0; x < rowLength; x++) {
+      let cell = levelData[z][x];
+      if (cell === 0) {
+        continue;
+      } else if (cell === X) {
+        g_camera.setLocation(x + 0.5, 1.5, z + 0.5);
+      } else {
+        for (let y = 0; y < cell; y++) {
+          let cube = new Cube();
+          cube.matrix.translate(x + 0.5, y + 0.5, z + 0.5);
+          g_levelObjects.push(cube);
+        }
+      }
+    }
+  }
 
-  g_levelObjects['floor'] = floor;
+  buildFloor(levelData.length, largestRowLength);
+}
+
+function buildFloor(len, wid) {
+  let lenAmnt = Math.ceil(len / 8);
+  let widAmnt = Math.ceil(wid / 8);
+  console.log(`Building floor with ${lenAmnt} by ${widAmnt} tiles.`);
+  for (let z = 0; z < lenAmnt; z++) {
+    for (let x = 0; x < widAmnt; x++) {
+      let floor = new Cube();
+      floor.textureMode = 1;
+      floor.matrix.translate(x * 8 + 4, -0.001, z * 8 + 4);
+      floor.matrix.scale(8, 0, 8);
+      g_levelObjects.push(floor);
+    }
+  }
 }
 
 function renderAllShapes() {
@@ -293,7 +353,7 @@ function renderAllShapes() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  for (const [name, shape] of Object.entries(g_levelObjects)) {
+  for (const shape of g_levelObjects) {
     shape.render();
   }
 }
