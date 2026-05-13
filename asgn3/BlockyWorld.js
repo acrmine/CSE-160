@@ -36,7 +36,7 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler2;
 
   float getFakeLight() {
-    return clamp(dot(normalize(vec3(16.0, 14.0, -13.0) - v_Position), normalize(v_Normal)), 0.0, 1.0);
+    return clamp(dot(normalize(vec3(8.0, 10.0, -13.0) - v_Position), normalize(v_Normal)), 0.0, 1.0);
   }
 
   void main() {
@@ -389,9 +389,49 @@ function buildLevel(levelData) {
   let teapot1 = new OBJModel('objmodels/teapot.obj');
   teapot1.textureMode = -3;
   teapot1.setScale(0.1, 0.1, 0.1);
-  teapot1.rotate(0, 90, 0);
+  teapot1.rotate(0, 70, 0);
   teapot1.setTranslate(7.5, 1, 13.5);
   g_levelObjects.push(teapot1);
+
+  let target1 = new OBJModel('objmodels/target.obj');
+  target1.color = [1, 0, 0, 1];
+  target1.textureMode = -3;
+  target1.setScale(1.2, 1.2, 1.2);
+  target1.rotate(0, -90, 0);
+  target1.setTranslate(30.9, 2, 4);
+  g_levelObjects.push(target1);
+
+  let target2 = new OBJModel('objmodels/target.obj');
+  target2.color = [1, 0, 0, 1];
+  target2.textureMode = -3;
+  target2.setScale(1.2, 1.2, 1.2);
+  target2.rotate(0, -90, 0);
+  target2.setTranslate(30.9, 2, 12);
+  g_levelObjects.push(target2);
+
+  let target3 = new OBJModel('objmodels/target.obj');
+  target3.color = [1, 0, 0, 1];
+  target3.textureMode = -3;
+  target3.setScale(1.2, 1.2, 1.2);
+  target3.rotate(0, -90, 0);
+  target3.setTranslate(30.9, 2, 20);
+  g_levelObjects.push(target3);
+
+  let target4 = new OBJModel('objmodels/target.obj');
+  target4.color = [1, 0, 0, 1];
+  target4.textureMode = -3;
+  target4.setScale(1.2, 1.2, 1.2);
+  target4.rotate(0, -90, 0);
+  target4.setTranslate(30.9, 2, 28);
+  g_levelObjects.push(target4);
+
+  let message = new OBJModel('objmodels/message.obj');
+  message.color = [0, 0, 1, 1];
+  message.textureMode = -3;
+  message.setScale(1.5, 1.5, 1.5);
+  message.rotate(0, 180, 0);
+  message.setTranslate(38, 10, 14);
+  g_levelObjects.push(message);
 
   let largestRowLength = 0;
   let cameraLocation = [];
