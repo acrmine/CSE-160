@@ -20,12 +20,13 @@ class Shape {
     this.normalBuffer = gl.createBuffer();
     this.uvBuffer = gl.createBuffer();
 
-    if (!this.vertexBuffer || !this.normalBuffer) {
+    if (!this.vertexBuffer || !this.normalBuffer || !this.uvBuffer) {
         console.log("Failed to create buffers for", this.filePath);
         return;
     }
 
     this.unappliedTransform = false;
+    this.isFullyLoaded = false;
   }
 
   setTranslate(x, y, z) {
@@ -92,6 +93,8 @@ class Shape {
   render() {
     this.applyTransform();
 
+    if (!this.isFullyLoaded) return;
+
     gl.uniform1i(u_textureMode, this.textureMode);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
@@ -104,6 +107,8 @@ class Shape {
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.normals), gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(a_Normal, 3, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(a_Normal);
+    } else {
+        gl.disableVertexAttribArray(a_Normal);
     }
 
     if (this.uvs.length > 0) {
@@ -111,6 +116,8 @@ class Shape {
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.uvs), gl.DYNAMIC_DRAW);
       gl.vertexAttribPointer(a_UV, 2, gl.FLOAT, false, 0, 0);
       gl.enableVertexAttribArray(a_UV);
+    } else {
+        gl.disableVertexAttribArray(a_UV);
     }
 
     // Pass the color of a point to u_FragColor variable

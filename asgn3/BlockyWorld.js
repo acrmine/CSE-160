@@ -40,7 +40,9 @@ var FSHADER_SOURCE = `
   }
 
   void main() {
-    if (u_textureMode == -2) {
+    if (u_textureMode == -3) {
+      gl_FragColor = vec4(u_FragColor.rgb * getFakeLight(), 1.0);
+    } else if (u_textureMode == -2) {
       gl_FragColor = u_FragColor;
     } else if (u_textureMode == -1) {
       gl_FragColor = vec4(v_UV, 1.0, 1.0);
@@ -383,6 +385,13 @@ function buildLevel(levelData) {
   g_blockCursor = new Cube([1,1,1,1])
   g_blockCursor.setScale(0.5, 0.5, 0.5);
   g_blockCursor.textureMode = -2;
+
+  let teapot1 = new OBJModel('objmodels/teapot.obj');
+  teapot1.textureMode = -3;
+  teapot1.setScale(0.1, 0.1, 0.1);
+  teapot1.rotate(0, 90, 0);
+  teapot1.setTranslate(7.5, 1, 13.5);
+  g_levelObjects.push(teapot1);
 
   let largestRowLength = 0;
   let cameraLocation = [];
