@@ -3,44 +3,96 @@ class Cube extends Shape {
     super(color);
     this.type = 'cube';
     this.textureMode = 0;
+
+    this.vertices = [
+      // Front face
+      -0.5,-0.5,-0.5,  0.5,0.5,-0.5,  0.5,-0.5,-0.5,
+      -0.5,-0.5,-0.5, -0.5,0.5,-0.5,  0.5,0.5,-0.5,
+
+      // Back face
+      -0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5,
+      -0.5,-0.5,0.5, 0.5,0.5,0.5, -0.5,0.5,0.5,
+
+      // Top face
+      -0.5,0.5,-0.5, -0.5,0.5,0.5, 0.5,0.5,0.5,
+      -0.5,0.5,-0.5, 0.5,0.5,0.5, 0.5,0.5,-0.5,
+
+      // Bottom face
+      -0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5,
+      -0.5,-0.5,-0.5, 0.5,-0.5,0.5, -0.5,-0.5,0.5,
+
+      // Left face
+      -0.5,-0.5,-0.5, -0.5,0.5,-0.5, -0.5,0.5,0.5,
+      -0.5,-0.5,-0.5, -0.5,0.5,0.5, -0.5,-0.5,0.5,
+
+      // Right face
+      0.5,-0.5,-0.5, 0.5,0.5,-0.5, 0.5,0.5,0.5,
+      0.5,-0.5,-0.5, 0.5,0.5,0.5, 0.5,-0.5,0.5,
+    ];
+
+    this.uvs = [
+      // Front face
+      0,0, 1,1, 1,0,
+      0,0, 0,1, 1,1,
+
+      // Back face
+      0,0, 1,0, 1,1,
+      0,0, 1,1, 0,1,
+
+      // Top face
+      0,0, 0,1, 1,1,
+      0,0, 1,1, 1,0,
+
+      // Bottom face
+      0,0, 1,0, 1,1,
+      0,0, 1,1, 0,1,
+
+      // Left face
+      0,0, 0,1, 1,1,
+      0,0, 1,1, 1,0,
+
+      // Right face
+      0,0, 0,1, 1,1,
+      0,0, 1,1, 1,0,
+    ];
   }
 
-  render() {
-    super.render();
+  // render() {
+  //   super.render();
 
-    var rgba = this.color;
+  //   var rgba = this.color;
 
-    // Pass the color of a point to u_FragColor variable
-    gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
+  //   // Pass the color of a point to u_FragColor variable
+  //   gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
 
-    gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
+  //   gl.uniformMatrix4fv(u_ModelMatrix, false, this.matrix.elements);
 
-    // Front of cube
-    drawTriangle3DUV([-0.5,-0.5,-0.5, 0.5,0.5,-0.5,  0.5,-0.5,-0.5], [0,0, 1,1, 1,0]);
-    drawTriangle3DUV([-0.5,-0.5,-0.5, -0.5,0.5,-0.5,  0.5,0.5,-0.5], [0,0, 0,1, 1,1]);
+  //   // Front of cube
+  //   drawTriangle3DUV([-0.5,-0.5,-0.5, 0.5,0.5,-0.5,  0.5,-0.5,-0.5], [0,0, 1,1, 1,0]);
+  //   drawTriangle3DUV([-0.5,-0.5,-0.5, -0.5,0.5,-0.5,  0.5,0.5,-0.5], [0,0, 0,1, 1,1]);
 
-    // Back of cube
-    drawTriangle3DUV([-0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5], [0,0, 1,0, 1,1]);
-    drawTriangle3DUV([-0.5,-0.5,0.5, 0.5,0.5,0.5, -0.5,0.5,0.5], [0,0, 1,1, 0,1]);
+  //   // Back of cube
+  //   drawTriangle3DUV([-0.5,-0.5,0.5, 0.5,-0.5,0.5, 0.5,0.5,0.5], [0,0, 1,0, 1,1]);
+  //   drawTriangle3DUV([-0.5,-0.5,0.5, 0.5,0.5,0.5, -0.5,0.5,0.5], [0,0, 1,1, 0,1]);
 
-    gl.uniform4f(u_FragColor, rgba[0] * 0.9, rgba[1] * 0.9, rgba[2] * 0.9, rgba[3]);
+  //   gl.uniform4f(u_FragColor, rgba[0] * 0.9, rgba[1] * 0.9, rgba[2] * 0.9, rgba[3]);
 
-    // Top of cube
-    drawTriangle3DUV([-0.5,0.5,-0.5, -0.5,0.5,0.5, 0.5,0.5,0.5], [0,0, 0,1, 1,1]);
-    drawTriangle3DUV([-0.5,0.5,-0.5, 0.5,0.5,0.5, 0.5,0.5,-0.5], [0,0, 1,1, 1,0]);
+  //   // Top of cube
+  //   drawTriangle3DUV([-0.5,0.5,-0.5, -0.5,0.5,0.5, 0.5,0.5,0.5], [0,0, 0,1, 1,1]);
+  //   drawTriangle3DUV([-0.5,0.5,-0.5, 0.5,0.5,0.5, 0.5,0.5,-0.5], [0,0, 1,1, 1,0]);
 
-    // Bottom of cube
-    drawTriangle3DUV([-0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5], [0,0, 1,0, 1,1]);
-    drawTriangle3DUV([-0.5,-0.5,-0.5, 0.5,-0.5,0.5, -0.5,-0.5,0.5], [0,0, 1,1, 0,1]);
+  //   // Bottom of cube
+  //   drawTriangle3DUV([-0.5,-0.5,-0.5, 0.5,-0.5,-0.5, 0.5,-0.5,0.5], [0,0, 1,0, 1,1]);
+  //   drawTriangle3DUV([-0.5,-0.5,-0.5, 0.5,-0.5,0.5, -0.5,-0.5,0.5], [0,0, 1,1, 0,1]);
 
-    gl.uniform4f(u_FragColor, rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]);
+  //   gl.uniform4f(u_FragColor, rgba[0] * 0.8, rgba[1] * 0.8, rgba[2] * 0.8, rgba[3]);
 
-    // Left of cube
-    drawTriangle3DUV([-0.5,-0.5,-0.5, -0.5,0.5,-0.5, -0.5,0.5,0.5], [0,0, 0,1, 1,1]);
-    drawTriangle3DUV([-0.5,-0.5,-0.5, -0.5,0.5,0.5, -0.5,-0.5,0.5], [0,0, 1,1, 1,0]);
+  //   // Left of cube
+  //   drawTriangle3DUV([-0.5,-0.5,-0.5, -0.5,0.5,-0.5, -0.5,0.5,0.5], [0,0, 0,1, 1,1]);
+  //   drawTriangle3DUV([-0.5,-0.5,-0.5, -0.5,0.5,0.5, -0.5,-0.5,0.5], [0,0, 1,1, 1,0]);
 
-    // Right of cube
-    drawTriangle3DUV([0.5,-0.5,-0.5, 0.5,0.5,-0.5, 0.5,0.5,0.5], [0,0, 0,1, 1,1]);
-    drawTriangle3DUV([0.5,-0.5,-0.5, 0.5,0.5,0.5, 0.5,-0.5,0.5], [0,0, 1,1, 1,0]);
-  }
+  //   // Right of cube
+  //   drawTriangle3DUV([0.5,-0.5,-0.5, 0.5,0.5,-0.5, 0.5,0.5,0.5], [0,0, 0,1, 1,1]);
+  //   drawTriangle3DUV([0.5,-0.5,-0.5, 0.5,0.5,0.5, 0.5,-0.5,0.5], [0,0, 1,1, 1,0]);
+  // }
 }

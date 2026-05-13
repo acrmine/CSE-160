@@ -7,12 +7,24 @@
 
   <body onload="main()">
     <p>
-      <canvas id="webgl" width="400" height="400">
+      <canvas id="webgl" width="600" height="600">
       Please use a browser that supports "canvas"
       </canvas>
     </p>
     <p>
       <span id="fps">FPS: 0</span>
+    </p>
+    <p>
+      Controls:
+      <ul>
+        <li>WASD to move forward, left, back, and right</li>
+        <li>Q and E to turn left and right</li>
+        <li>Shift to toggle block cursor visibility</li>
+        <li>
+          Click to lock pointer and enable mouse look
+          (While it's locked, clicking will place a block or break a block if it's already there)
+        </li>
+        <li>Escape to unlock pointer</li>
     </p>
 
     <script src="lib/cuon-matrix-cse160.js"></script>
