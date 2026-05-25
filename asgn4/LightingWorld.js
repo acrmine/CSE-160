@@ -40,7 +40,9 @@ var FSHADER_SOURCE = `
   }
 
   void main() {
-    if (u_textureMode == -3) {
+    if (u_textureMode == -4) {
+      gl_FragColor = vec4((v_Normal + 1.0) / 2.0, 1.0);
+    } else if (u_textureMode == -3) {
       gl_FragColor = vec4(u_FragColor.rgb * getFakeLight(), 1.0);
     } else if (u_textureMode == -2) {
       gl_FragColor = u_FragColor;
@@ -71,11 +73,14 @@ let u_NormalMatrix;
 let u_textureMode;
 let u_Sampler0;
 let u_Sampler1;
+let u_Sampler2;
 
 let g_camera = new Camera();
 let g_blockCursor;
 let g_visibleCursor = false;
 let g_levelObjects = [];
+
+let g_normalOn = false;
 
 let g_prevTime = performance.now();
 let g_frameCount = 0;
@@ -96,8 +101,8 @@ let level1 = [
   [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
-  [1,0,0,0,4,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
-  [1,0,0,0,0,0,0,1,0,0,X,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,4,0,0,1,0,0,X,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
   [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
   [1,0,0,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
@@ -222,6 +227,15 @@ function connectVariablesToGLSL() {
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
 }
 
+function addUIEventListeners() {
+  document.getElementById('normalOn').addEventListener('click', () => {
+    g_normalOn = true;
+  });
+  document.getElementById('normalOff').addEventListener('click', () => {
+    g_normalOn = false;
+  });
+}
+
 function initTextures() {
   let image0 = new Image();
   image0.onload = function() { sendImageToTEXTURE0(image0); };
@@ -324,6 +338,7 @@ function main() {
   connectVariablesToGLSL();
 
   buildLevel(level1);
+  addUIEventListeners();
 
   canvas.addEventListener('click', click);
   document.addEventListener('mousemove', mousemove);
@@ -433,6 +448,12 @@ function buildLevel(levelData) {
   message.setTranslate(38, 10, 14);
   g_levelObjects.push(message);
 
+  let lightingSphere = new OBJModel('objmodels/sphere.obj');
+  lightingSphere.color = [1, 0, 0, 1];
+  lightingSphere.textureMode = -3;
+  lightingSphere.setTranslate(18, 2, 12.5);
+  g_levelObjects.push(lightingSphere);
+
   let largestRowLength = 0;
   let cameraLocation = [];
   for (let z = 0; z < levelData.length; z++) {
@@ -473,7 +494,7 @@ function buildFloor(len, wid) {
       let floor = new Cube();
       floor.textureMode = 1;
       floor.matrix.translate(x * 8 + 4, -0.001, z * 8 + 4);
-      floor.matrix.scale(8, 0, 8);
+      floor.matrix.scale(8, 0.001, 8);
       g_levelObjects.push(floor);
     }
   }

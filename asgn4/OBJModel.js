@@ -33,6 +33,7 @@ class OBJModel extends Shape {
     parseModel(fileContent) {
         const lines = fileContent.split("\n");
         const allVertices = [];
+        const allUVs = [];
         const allNormals = [];
 
         for (let i = 0; i < lines.length; i++) {
@@ -41,18 +42,26 @@ class OBJModel extends Shape {
 
             if (tokens[0] == 'v') {
                 allVertices.push(parseFloat(tokens[1]), parseFloat(tokens[2]), parseFloat(tokens[3]));
+            } else if (tokens[0] == "vt") {
+                allUVs.push(parseFloat(tokens[1]), parseFloat(tokens[2])); 
             } else if (tokens[0] == "vn") {
                 allNormals.push(parseFloat(tokens[1]), parseFloat(tokens[2]), parseFloat(tokens[3]));
             } else if (tokens[0] == "f") {
                 for (const face of [tokens[1], tokens[2], tokens[3]]) {
-                    const indices = face.split("//");
+                    const indices = face.split("/");
                     const vertexIndex = (parseInt(indices[0]) - 1) * 3;
-                    const normalIndex = (parseInt(indices[1]) - 1) * 3;
+                    const uvIndex = (parseInt(indices[1]) - 1) * 2;
+                    const normalIndex = (parseInt(indices[2]) - 1) * 3;
 
                     this.vertices.push(
                         allVertices[vertexIndex],
                         allVertices[vertexIndex + 1],
                         allVertices[vertexIndex + 2]
+                    );
+
+                    this.uvs.push(
+                        allUVs[uvIndex],
+                        allUVs[uvIndex + 1]
                     );
 
                     this.normals.push(

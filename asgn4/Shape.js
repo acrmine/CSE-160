@@ -95,7 +95,11 @@ class Shape {
 
     if (!this.isFullyLoaded) return;
 
-    gl.uniform1i(u_textureMode, this.textureMode);
+    if (g_normalOn) {
+      gl.uniform1i(u_textureMode, -4);
+    } else {
+      gl.uniform1i(u_textureMode, this.textureMode);
+    }
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.DYNAMIC_DRAW);
