@@ -5,7 +5,7 @@ var VSHADER_SOURCE = `
   attribute vec4 a_Normal;
   attribute vec2 a_UV;
 
-  varying vec3 v_Position;
+  varying vec4 v_Position;
   varying vec3 v_Normal;
   varying vec2 v_UV;
 
@@ -16,7 +16,7 @@ var VSHADER_SOURCE = `
 
   void main() {
     gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_ModelMatrix * a_Position;
-    v_Position = vec3(u_ModelMatrix * a_Position);
+    v_Position = u_ModelMatrix * a_Position;
     v_Normal = normalize(vec3(u_NormalMatrix * a_Normal));
     v_UV = a_UV;
   }`
@@ -25,7 +25,7 @@ var VSHADER_SOURCE = `
 var FSHADER_SOURCE = `
   precision highp float;
 
-  varying vec3 v_Position;
+  varying vec4 v_Position;
   varying vec3 v_Normal;
   varying vec2 v_UV;
 
@@ -35,8 +35,11 @@ var FSHADER_SOURCE = `
   uniform sampler2D u_Sampler1;
   uniform sampler2D u_Sampler2;
 
+  uniform vec3 u_lightPos;
+  uniform vec3 u_cameraPos;
+
   float getFakeLight() {
-    return clamp(dot(normalize(vec3(8.0, 10.0, -13.0) - v_Position), normalize(v_Normal)), 0.0, 1.0);
+    return clamp(dot(normalize(vec3(8.0, 10.0, -13.0) - v_Position.xyz), normalize(v_Normal)), 0.0, 1.0);
   }
 
   void main() {
@@ -57,6 +60,26 @@ var FSHADER_SOURCE = `
     } else {
       gl_FragColor = vec4(1, 0.2, 0.2, 1);
     }
+
+    vec3 lightVector = u_lightPos - v_Position.xyz;
+    float r = length(lightVector);
+
+    vec3 L = normalize(lightVector);
+    vec3 N = normalize(v_Normal);
+    float nDotL = max(dot(N, L), 0.0);
+
+    // Reflection
+    vec3 R = reflect(L, N);
+
+    // eye
+    vec3 E = normalize(u_cameraPos - v_Position.xyz);
+
+    // Specular
+    float specular = pow(max(dot(R, E), 0.0), 16.0);
+
+    vec3 diffuse = vec3(gl_FragColor) * nDotL;
+    vec3 ambient = vec3(gl_FragColor) * 0.3;
+    gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
   }`
 
 // Global variables
@@ -74,13 +97,17 @@ let u_textureMode;
 let u_Sampler0;
 let u_Sampler1;
 let u_Sampler2;
-
+let u_lightPos;
+let u_cameraPos;
 let g_camera = new Camera();
 let g_blockCursor;
 let g_visibleCursor = false;
 let g_levelObjects = [];
 
 let g_normalOn = false;
+let g_lightSpinOn = true;
+let g_lightingSphere;
+let g_light;
 
 let g_prevTime = performance.now();
 let g_frameCount = 0;
@@ -98,13 +125,13 @@ let level1 = [
   [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
   [1,0,0,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
-  [1,0,0,0,4,0,0,1,0,0,X,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4],
-  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
-  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,1,2,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
-  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,5,5,5,5,5,5,0,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,4,0,0,1,0,X,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,4],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,3],
+  [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,2],
+  [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5,5,5,5,5,5,0,0,0,0,0,0,0,0,0,0,1],
   [1,0,0,2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
   [1,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2],
   [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3],
@@ -222,6 +249,18 @@ function connectVariablesToGLSL() {
     return;
   }
 
+  u_lightPos = gl.getUniformLocation(gl.program, 'u_lightPos');
+  if (!u_lightPos) {
+    console.log('Failed to get the storage location of u_lightPos');
+    return;
+  }
+
+  u_cameraPos = gl.getUniformLocation(gl.program, 'u_cameraPos');
+  if (!u_cameraPos) {
+    console.log('Failed to get the storage location of u_cameraPos');
+    return;
+  }
+
   // Give u_ModelMatrix an identity matrix
   var identityM = new Matrix4();
   gl.uniformMatrix4fv(u_ModelMatrix, false, identityM.elements);
@@ -233,6 +272,31 @@ function addUIEventListeners() {
   });
   document.getElementById('normalOff').addEventListener('click', () => {
     g_normalOn = false;
+  });
+
+  document.getElementById('lightSpinToggle').addEventListener('click', (event) => {
+    if (event.target.innerText.endsWith("On")) {
+      event.target.innerText = "Light Spin Toggle: Off";
+      g_lightSpinOn = false;
+    } else {
+      event.target.innerText = "Light Spin Toggle: On";
+      g_lightSpinOn = true;
+    }
+  });
+
+  document.getElementById('lightX').addEventListener('input', (event) => {
+    g_light.pos.x = g_lightingSphere.pos.x + parseFloat(event.target.value);
+    g_light.unappliedTransform = true;
+  });
+
+  document.getElementById('lightY').addEventListener('input', (event) => {
+    g_light.pos.y = g_lightingSphere.pos.y + parseFloat(event.target.value);
+    g_light.unappliedTransform = true;
+  });
+
+  document.getElementById('lightZ').addEventListener('input', (event) => {
+    g_light.pos.z = g_lightingSphere.pos.z + parseFloat(event.target.value);
+    g_light.unappliedTransform = true;
   });
 }
 
@@ -357,8 +421,23 @@ function main() {
 }
 
 function tick() {
+  updateAnimationAngles();
+
   renderAllShapes();
   requestAnimationFrame(tick);
+}
+
+function updateAnimationAngles() {
+  let time = Date.now() / 1000;
+
+  let lightXSlider = document.getElementById('lightX');
+  let lightZSlider = document.getElementById('lightZ');
+
+  if (g_lightSpinOn) {
+    g_light.pos.x = (lightXSlider.max - 1) * Math.cos(time * 1.5) + (g_lightingSphere.pos.x + parseFloat(lightXSlider.value));
+    g_light.pos.z = (lightZSlider.max - 0.5) * Math.sin(time * 1.5) + (g_lightingSphere.pos.z + parseFloat(lightZSlider.value));
+    g_light.unappliedTransform = true;
+  }
 }
 
 function updateFPS(currTime) {
@@ -445,14 +524,20 @@ function buildLevel(levelData) {
   message.textureMode = -3;
   message.setScale(1.5, 1.5, 1.5);
   message.rotate(0, 180, 0);
-  message.setTranslate(38, 10, 14);
+  message.setTranslate(38, 8, 14);
   g_levelObjects.push(message);
 
-  let lightingSphere = new OBJModel('objmodels/sphere.obj');
-  lightingSphere.color = [1, 0, 0, 1];
-  lightingSphere.textureMode = -3;
-  lightingSphere.setTranslate(18, 2, 12.5);
-  g_levelObjects.push(lightingSphere);
+  g_lightingSphere = new OBJModel('objmodels/smooth_sphere.obj');
+  g_lightingSphere.color = [1, 0, 0, 1];
+  g_lightingSphere.textureMode = -2;
+  g_lightingSphere.setTranslate(18, 2, 12.5);
+  g_levelObjects.push(g_lightingSphere);
+
+  g_light = new Cube([1,1,0,1]);
+  g_light.setScale(0.1, 0.1, 0.1);
+  g_light.setTranslate(g_lightingSphere.pos.x, g_lightingSphere.pos.y+2, g_lightingSphere.pos.z+2);
+  g_light.textureMode = -2;
+  g_levelObjects.push(g_light);
 
   let largestRowLength = 0;
   let cameraLocation = [];
@@ -522,6 +607,8 @@ function renderAllShapes() {
     );
     g_blockCursor.render();
   }
+
+  gl.uniform3f(u_lightPos, g_light.pos.x, g_light.pos.y, g_light.pos.z);
 
   for (const shape of g_levelObjects) {
     shape.render();

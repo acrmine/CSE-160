@@ -76,15 +76,13 @@ class Shape {
       this.matrix.setIdentity();
 
       this.matrix.translate(this.pos.x, this.pos.y, this.pos.z);
-      this.unappliedTranslation = false;
 
       this.matrix.rotate(this.rot.x, 1, 0, 0);
       this.matrix.rotate(this.rot.y, 0, 1, 0);
       this.matrix.rotate(this.rot.z, 0, 0, 1);
-      this.unappliedRotation = false;
 
       this.matrix.scale(this.scl.x, this.scl.y, this.scl.z);
-      this.unappliedScale = false;
+      this.unappliedTransform = false;
     }
   }
 
