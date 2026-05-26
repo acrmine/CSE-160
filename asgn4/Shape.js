@@ -5,6 +5,8 @@ class Shape {
   constructor(color = [1, 1, 0, 1]) {
     this.type = 'generic';
     this.color = color;
+    this.specularity = 80.0;
+    this.specularityOn = false;
 
     this.pos = {x: 0, y: 0, z: 0};
     this.rot = {x: 0, y: 0, z: 0};
@@ -98,6 +100,9 @@ class Shape {
     } else {
       gl.uniform1i(u_textureMode, this.textureMode);
     }
+
+    gl.uniform1f(u_specularity, this.specularity);
+    gl.uniform1i(u_specularOn, this.specularityOn);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertices), gl.DYNAMIC_DRAW);

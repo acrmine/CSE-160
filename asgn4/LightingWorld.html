@@ -16,13 +16,18 @@
     </p>
     <p>
       <button id="normalOn">Normal On</button>
-      <button id="normalOff">Normal Off</button>
+      <button id="normalOff">Normal Off</button><br>
+      <button id="lightingOn">Lighting On</button>
+      <button id="lightingOff">Lighting Off</button>
     </p>
     <p>
       <button id="lightSpinToggle">Light Spin Toggle: On</button><br>
       Light X<input type="range" id="lightX" name="lightX" min="-3" max="3" value="0" step="0.1">
       Light Y<input type="range" id="lightY" name="lightY" min="-2" max="3" value="2" step="0.1">
-      Light Z<input type="range" id="lightZ" name="lightZ" min="-2.5" max="2.5" value="0" step="0.1">
+      Light Z<input type="range" id="lightZ" name="lightZ" min="-2.5" max="2.5" value="0" step="0.1"><br>
+      Light Red<input type="range" id="lightRed" name="lightRed" min="0" max="1" value="1" step="0.01">
+      Light Green<input type="range" id="lightGreen" name="lightGreen" min="0" max="1" value="1" step="0.01">
+      Light Blue<input type="range" id="lightBlue" name="lightBlue" min="0" max="1" value="1" step="0.01">
     </p>
     <p>
       Controls:
@@ -45,7 +50,7 @@
     <script src="Shape.js"></script>
     <script src="OBJModel.js"></script>
     <script src="Cube.js"></script>
-    <script src="HalfPyramid.js"></script>
+    <script src="Sphere.js"></script>
     <script src="LightingWorld.js"></script>
   </body>
 </html>

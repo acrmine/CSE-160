@@ -31,23 +31,23 @@ var FSHADER_SOURCE = `
 
   uniform vec4 u_FragColor;
   uniform int u_textureMode;
+  uniform float u_specularity;
+
+  uniform bool u_specularOn;
+  uniform bool u_lightingOn;
+
   uniform sampler2D u_Sampler0;
   uniform sampler2D u_Sampler1;
   uniform sampler2D u_Sampler2;
 
   uniform vec3 u_lightPos;
   uniform vec3 u_cameraPos;
-
-  float getFakeLight() {
-    return clamp(dot(normalize(vec3(8.0, 10.0, -13.0) - v_Position.xyz), normalize(v_Normal)), 0.0, 1.0);
-  }
+  uniform vec3 u_lightColor;
 
   void main() {
     if (u_textureMode == -4) {
       gl_FragColor = vec4((v_Normal + 1.0) / 2.0, 1.0);
-    } else if (u_textureMode == -3) {
-      gl_FragColor = vec4(u_FragColor.rgb * getFakeLight(), 1.0);
-    } else if (u_textureMode == -2) {
+    } else if (u_textureMode == -2 || u_textureMode == -3) {
       gl_FragColor = u_FragColor;
     } else if (u_textureMode == -1) {
       gl_FragColor = vec4(v_UV, 1.0, 1.0);
@@ -69,17 +69,24 @@ var FSHADER_SOURCE = `
     float nDotL = max(dot(N, L), 0.0);
 
     // Reflection
-    vec3 R = reflect(L, N);
+    vec3 R = reflect(-L, N);
 
     // eye
     vec3 E = normalize(u_cameraPos - v_Position.xyz);
 
     // Specular
-    float specular = pow(max(dot(R, E), 0.0), 16.0);
+    vec3 specular = pow(max(dot(R, E), 0.0), u_specularity) * u_lightColor;
 
-    vec3 diffuse = vec3(gl_FragColor) * nDotL;
-    vec3 ambient = vec3(gl_FragColor) * 0.3;
-    gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+    vec3 diffuse = vec3(gl_FragColor) * (u_lightColor * nDotL);
+    vec3 ambient = vec3(gl_FragColor) * (u_lightColor * 0.3);
+
+    if (u_lightingOn) {
+      if (u_specularOn) {
+        gl_FragColor = vec4(specular + diffuse + ambient, 1.0);
+      } else {
+        gl_FragColor = vec4(diffuse + ambient, 1.0);
+      }
+    }
   }`
 
 // Global variables
@@ -94,6 +101,10 @@ let u_ViewMatrix;
 let u_ProjectionMatrix;
 let u_NormalMatrix;
 let u_textureMode;
+let u_specularity;
+let u_specularOn;
+let u_lightingOn;
+let u_lightColor;
 let u_Sampler0;
 let u_Sampler1;
 let u_Sampler2;
@@ -106,8 +117,10 @@ let g_levelObjects = [];
 
 let g_normalOn = false;
 let g_lightSpinOn = true;
+let g_lightingOn = true;
 let g_lightingSphere;
 let g_light;
+let g_lightColor = [1, 1, 1];
 
 let g_prevTime = performance.now();
 let g_frameCount = 0;
@@ -233,6 +246,30 @@ function connectVariablesToGLSL() {
     return;
   }
 
+  u_specularity = gl.getUniformLocation(gl.program, 'u_specularity');
+  if (!u_specularity) {
+    console.log('Failed to get the storage location of u_specularity');
+    return;
+  }
+
+  u_specularOn = gl.getUniformLocation(gl.program, 'u_specularOn');
+  if (!u_specularOn) {
+    console.log('Failed to get the storage location of u_specularOn');
+    return;
+  }
+
+  u_lightingOn = gl.getUniformLocation(gl.program, 'u_lightingOn');
+  if (!u_lightingOn) {
+    console.log('Failed to get the storage location of u_lightingOn');
+    return;
+  }
+
+  u_lightColor = gl.getUniformLocation(gl.program, 'u_lightColor');
+  if (!u_lightColor) {
+    console.log('Failed to get the storage location of u_lightColor');
+    return;
+  }
+
   u_Sampler0 = gl.getUniformLocation(gl.program, 'u_Sampler0');
   u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1');
   u_Sampler2 = gl.getUniformLocation(gl.program, 'u_Sampler2');
@@ -273,6 +310,12 @@ function addUIEventListeners() {
   document.getElementById('normalOff').addEventListener('click', () => {
     g_normalOn = false;
   });
+  document.getElementById('lightingOn').addEventListener('click', () => {
+    g_lightingOn = true;
+  });
+  document.getElementById('lightingOff').addEventListener('click', () => {
+    g_lightingOn = false;
+  });
 
   document.getElementById('lightSpinToggle').addEventListener('click', (event) => {
     if (event.target.innerText.endsWith("On")) {
@@ -297,6 +340,16 @@ function addUIEventListeners() {
   document.getElementById('lightZ').addEventListener('input', (event) => {
     g_light.pos.z = g_lightingSphere.pos.z + parseFloat(event.target.value);
     g_light.unappliedTransform = true;
+  });
+
+  document.getElementById('lightRed').addEventListener('input', (event) => {
+    g_lightColor[0] = parseFloat(event.target.value);
+  });
+  document.getElementById('lightGreen').addEventListener('input', (event) => {
+    g_lightColor[1] = parseFloat(event.target.value);
+  });
+  document.getElementById('lightBlue').addEventListener('input', (event) => {
+    g_lightColor[2] = parseFloat(event.target.value);
   });
 }
 
@@ -481,10 +534,11 @@ function buildLevel(levelData) {
   g_blockCursor.textureMode = -2;
 
   let teapot1 = new OBJModel('objmodels/teapot.obj');
-  teapot1.textureMode = -3;
-  teapot1.setScale(0.1, 0.1, 0.1);
+  teapot1.textureMode = -2;
+  teapot1.specularityOn = true;
+  teapot1.setScale(0.2, 0.2, 0.2);
   teapot1.rotate(0, 70, 0);
-  teapot1.setTranslate(7.5, 1, 13.5);
+  teapot1.setTranslate(17, 0.1, 13.5);
   g_levelObjects.push(teapot1);
 
   let target1 = new OBJModel('objmodels/target.obj');
@@ -524,17 +578,21 @@ function buildLevel(levelData) {
   message.textureMode = -3;
   message.setScale(1.5, 1.5, 1.5);
   message.rotate(0, 180, 0);
-  message.setTranslate(38, 8, 14);
+  message.setTranslate(38, 8, 12.5);
   g_levelObjects.push(message);
 
-  g_lightingSphere = new OBJModel('objmodels/smooth_sphere.obj');
+  //g_lightingSphere = new OBJModel('objmodels/smooth_sphere.obj');
+  g_lightingSphere = new Sphere();
   g_lightingSphere.color = [1, 0, 0, 1];
   g_lightingSphere.textureMode = -2;
+  g_lightingSphere.specularityOn = true;
   g_lightingSphere.setTranslate(18, 2, 12.5);
   g_levelObjects.push(g_lightingSphere);
 
-  g_light = new Cube([1,1,0,1]);
-  g_light.setScale(0.1, 0.1, 0.1);
+  g_light = new OBJModel('objmodels/invertCube.obj');
+  g_light.color = [1,1,0,1];
+  g_light.setScale(0.05, 0.05, 0.05);
+  g_light.specularityOn = true;
   g_light.setTranslate(g_lightingSphere.pos.x, g_lightingSphere.pos.y+2, g_lightingSphere.pos.z+2);
   g_light.textureMode = -2;
   g_levelObjects.push(g_light);
@@ -607,8 +665,12 @@ function renderAllShapes() {
     );
     g_blockCursor.render();
   }
+  gl.uniform1i(u_lightingOn, g_lightingOn);
 
   gl.uniform3f(u_lightPos, g_light.pos.x, g_light.pos.y, g_light.pos.z);
+  gl.uniform3f(u_lightColor, g_lightColor[0], g_lightColor[1], g_lightColor[2]);
+
+  gl.uniform3f(u_cameraPos, g_camera.eye.elements[0], g_camera.eye.elements[1], g_camera.eye.elements[2]);
 
   for (const shape of g_levelObjects) {
     shape.render();
