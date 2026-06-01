@@ -1,6 +1,3 @@
-import * as THREE from 'three';
-import * as CANNON from 'lib/cannon.js';
-
 class Player {
   constructor(posX, posY, posZ, fov = g_fov, aspect = g_aspect, near = g_near, far = g_far) {
     this.camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
@@ -12,7 +9,7 @@ class Player {
     this.sphereBody = new CANNON.Body({
       mass: 1,
       position: new CANNON.Vec3(posX, posY, posZ),
-      shape: new CANNON.Sphere(colliderRadius)
+      shape: new CANNON.Sphere(this.colliderRadius)
     });
     phys_world.addBody(this.sphereBody);
   }
