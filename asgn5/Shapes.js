@@ -1,26 +1,45 @@
-class Plane {
-  constructor(posX = 0, posY = 0, posZ = 0, visSizeX = 100, visSizeY = 100) {
-    this.planeBody = new CANNON.Body({
-      mass: 0,
-      position: new CANNON.Vec3(posX, posY, posZ),
-      shape: new CANNON.Plane()
-    });
-    phys_world.addBody(this.planeBody);
+import * as THREE from 'three';
+import * as Textures from './Init.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-    this.planeMesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(visSizeX, visSizeY),
-      new THREE.MeshBasicMaterial({ color: 0x00ff00, side: THREE.DoubleSide })
+export class Box {
+  constructor(userParametersObject = {}) {
+
+    let paramsObject = {posX: 0, posY: 0, posZ: 0, rotX: 0, rotY: 0, rotZ: 0, sizeX: 2, sizeY: 2, sizeZ: 2, textureOrColor: Textures.greenWindow, mass: 0};
+    
+    for (let key in userParametersObject) {
+      paramsObject[key] = userParametersObject[key];
+    }
+
+    this.body = new CANNON.Body({
+      mass: paramsObject.mass,
+      position: new CANNON.Vec3(paramsObject.posX, paramsObject.posY, paramsObject.posZ),
+      quaternion: new CANNON.Quaternion().setFromEuler(paramsObject.rotX, paramsObject.rotY, paramsObject.rotZ, 'XYZ'),
+      shape: new CANNON.Box(new CANNON.Vec3(paramsObject.sizeX / 2, paramsObject.sizeY / 2, paramsObject.sizeZ / 2))
+    });
+    phys_world.addBody(this.body);
+
+    let material;
+    if (paramsObject.textureOrColor instanceof THREE.Texture) {
+      material = new THREE.MeshBasicMaterial({ map: paramsObject.textureOrColor, side: THREE.RepeatWrapping });
+    } else {
+      material = new THREE.MeshBasicMaterial({ color: paramsObject.textureOrColor});
+    }
+
+    this.mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(paramsObject.sizeX, paramsObject.sizeY, paramsObject.sizeZ),
+      material
     );
-    this.planeMesh.position.set(posX, posY, posZ);
-    scene.add(this.planeMesh);
+    this.mesh.position.set(paramsObject.posX, paramsObject.posY, paramsObject.posZ);
+    this.mesh.rotation.set(paramsObject.rotX, paramsObject.rotY, paramsObject.rotZ);
+    scene.add(this.mesh);
+
+    g_dynamic_objects.push(this);
   }
 
   update() {
-    this.planeMesh.position.set(
-      this.planeBody.position.x, 
-      this.planeBody.position.y, 
-      this.planeBody.position.z
-    );
+    updateMeshBodyTransform(this.mesh, this.body);
   }
 }
 

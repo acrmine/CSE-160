@@ -2,41 +2,31 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-const fixedTimeStep = 1.0 / 60.0;
-const maxSubSteps = 3;
-
-export var g_keys = {};
-
-export var scene = new THREE.Scene();
+scene = new THREE.Scene();
 scene.background = new THREE.Color(0xaaaaaa);
 
-export var phys_world = new CANNON.World();
-phys_world.gravity.set(0, 0, -9.82);
+phys_world = new CANNON.World();
+phys_world.gravity.set(0, -9.82, 0);
 
-export var renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth - 20, window.innerHeight - 20);
 document.body.appendChild(renderer.domElement);
 
-export var g_prevTime = performance.now();
-export var g_frameCount = 0;
-export var g_fps = 0;
-export var g_frameDelta = 1.0 / 60.0;
+textureLoader = new THREE.TextureLoader();
 
-export var g_dynamic_objects = [];
+export const greenCheckerboardTexture = textureLoader.load('imgs/texture_08.png');
+greenCheckerboardTexture.colorSpace = THREE.SRGBColorSpace;
+greenCheckerboardTexture.wrapS = THREE.RepeatWrapping;
+greenCheckerboardTexture.wrapT = THREE.RepeatWrapping;
+greenCheckerboardTexture.repeat.set(20, 20);
 
-export const approachZero = (num, delta) => {
-  if (num > 0) {
-    return Math.max(0, num - delta);
-  }
-  return Math.min(0, num + delta);
-}
+export const greenWindow = textureLoader.load('imgs/texture_13.png');
+greenWindow.colorSpace = THREE.SRGBColorSpace;
 
-function initKeyListener() {
-  document.addEventListener('keydown', (event) => {
-    g_keys[event.key] = true;
-  });
-  document.addEventListener('keyup', (event) => {
-    g_keys[event.key] = false;
-  });
-}
-initKeyListener();
+
+document.addEventListener('keydown', (event) => {
+  g_keys[event.key] = true;
+});
+document.addEventListener('keyup', (event) => {
+  g_keys[event.key] = false;
+});

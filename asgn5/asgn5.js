@@ -1,20 +1,25 @@
-// Camera defaults
-const g_fov = 75;
-const g_aspect = 2; 
-const g_near = 0.1;
-const g_far = 1000;
+import * as THREE from 'three';
+import * as Shapes from './Shapes.js';
+import * as Textures from './Init.js';
+import { Player } from './Player.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let player;
 
 function buildScene() {
-  let groundPlane = new Plane(0, 0, 0);
-  g_dynamic_objects.push(groundPlane);
+  const directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+  scene.add(directionalLight);
+
+  let groundPlane = new Shapes.Box({ posX: 0, posY: 0, posZ: 0, sizeX: 100, sizeY: 1, sizeZ: 100, textureOrColor: Textures.greenCheckerboardTexture });
+
+  let cube1 = new Shapes.Box({ posX: 0, posY: 5, posZ: -5, sizeX: 1, sizeY: 1, sizeZ: 1, textureOrColor: Textures.greenWindow, mass: 1 });
 }
 
 function main() {
   buildScene();
 
-  player = new Player(0, 0, 5);
+  player = new Player(0, 5, 0);
 
   updateFPS(g_prevTime);
   animate();
