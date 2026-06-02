@@ -39,7 +39,7 @@ export class Player {
   }
 
   updateMovement() {
-    this.camera.getWorldDirection(this.frontVec);
+    this.controls.getDirection(this.frontVec);
     this.frontVec.y = 0;
     this.frontVec.normalize();
 
