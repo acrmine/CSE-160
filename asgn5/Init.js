@@ -10,9 +10,15 @@ phys_world.gravity.set(0, -9.82, 0);
 
 renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth - 20, window.innerHeight - 20);
+renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 textureLoader = new THREE.TextureLoader();
+
+export const skybox = textureLoader.load('imgs/kloppenheim_06_puresky.jpg');
+skybox.colorSpace = THREE.SRGBColorSpace;
+skybox.mapping = THREE.EquirectangularReflectionMapping;
+scene.background = skybox;
 
 export const greenCheckerboardTexture = textureLoader.load('imgs/texture_08.png');
 greenCheckerboardTexture.colorSpace = THREE.SRGBColorSpace;

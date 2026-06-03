@@ -32,10 +32,10 @@ export class Player {
     this.sphereBody.linearDamping = 0.8;
     phys_world.addBody(this.sphereBody);
 
-    this.moveSpeed = 0.1;
+    this.moveSpeed = 0.5;
     this.maxLateralSpeed = 3.0;
     this.maxVerticalSpeed = 10.0;
-    this.jumpImpulse = 5.0;
+    this.jumpImpulse = 3.0;
   }
 
   updateMovement() {
@@ -59,13 +59,15 @@ export class Player {
     if (g_keys['d']) {
       this.moveVec.add(this.sideVec);
     }
-    if (g_keys[' ']) {
-      this.moveVec.add(this.upVec);
-    }
 
-    if(this.moveVec.x === 0 && this.moveVec.y === 0 && this.moveVec.z === 0) {
+    if(this.moveVec.x !== 0 || this.moveVec.y !== 0 || this.moveVec.z !== 0) {
       this.moveVec.normalize();
       this.moveVec.multiplyScalar(this.moveSpeed);
+    }
+
+    if (g_keys[' ']) {
+      this.moveVec.add(this.upVec);
+      this.moveVec.multiplyScalar(this.jumpImpulse);
     }
 
     this.sphereBody.velocity.x += this.moveVec.x;
@@ -82,7 +84,7 @@ export class Player {
 
     this.camera.position.set(
       this.sphereBody.position.x, 
-      this.sphereBody.position.y, 
+      this.sphereBody.position.y + 1.0, 
       this.sphereBody.position.z
     );
   }

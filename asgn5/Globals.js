@@ -35,3 +35,29 @@ const updateMeshBodyTransform = (mesh, body) => {
   mesh.position.set(body.position.x, body.position.y, body.position.z);
   mesh.quaternion.set(body.quaternion.x, body.quaternion.y, body.quaternion.z, body.quaternion.w);
 }
+
+const updateBodyMass = (body, newMass) => {
+  body.mass = newMass;
+  if (newMass === 0) {
+    body.type = CANNON.Body.STATIC;
+  } else {
+    body.type = CANNON.Body.DYNAMIC;
+  }
+  body.updateMassProperties();
+}
+
+const updateMeshMaterialAttribs = (mesh, attribs) => {
+  if (attribs.roughness !== undefined) {
+    mesh.material.roughness = attribs.roughness;
+  }
+  if (attribs.metalness !== undefined) {
+    mesh.material.metalness = attribs.metalness;
+  }
+  mesh.material.needsUpdate = true;
+}
+
+const createTrimesh = (bufferGeometry) => {
+    const vertices = bufferGeometry.attributes.position.array;
+    const indices = Object.keys(vertices).map(Number);
+    return new CANNON.Trimesh(vertices, indices);
+}
