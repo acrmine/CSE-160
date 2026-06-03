@@ -30,7 +30,7 @@ export class Box {
 
     let material;
     if (paramsObject.textureOrColor instanceof THREE.Texture) {
-      material = new THREE.MeshStandardMaterial({ map: paramsObject.textureOrColor, side: THREE.RepeatWrapping, roughness: paramsObject.roughness, metalness: paramsObject.metalness });
+      material = new THREE.MeshStandardMaterial({ map: paramsObject.textureOrColor, side: THREE.DoubleSide, roughness: paramsObject.roughness, metalness: paramsObject.metalness });
     } else {
       material = new THREE.MeshStandardMaterial({ color: paramsObject.textureOrColor, roughness: paramsObject.roughness, metalness: paramsObject.metalness });
     }
@@ -41,6 +41,8 @@ export class Box {
     );
     this.mesh.position.set(paramsObject.posX, paramsObject.posY, paramsObject.posZ);
     this.mesh.rotation.set(paramsObject.rotX, paramsObject.rotY, paramsObject.rotZ);
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
     scene.add(this.mesh);
 
     g_dynamic_objects.push(this);
@@ -88,6 +90,8 @@ export class Sphere {
     );
     this.mesh.position.set(paramsObject.posX, paramsObject.posY, paramsObject.posZ);
     this.mesh.rotation.set(paramsObject.rotX, paramsObject.rotY, paramsObject.rotZ);
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
     scene.add(this.mesh);
 
     g_dynamic_objects.push(this);
