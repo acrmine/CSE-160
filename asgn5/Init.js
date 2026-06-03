@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0xaaaaaa);
@@ -14,6 +13,8 @@ renderer.shadowMap.enabled = true;
 document.body.appendChild(renderer.domElement);
 
 textureLoader = new THREE.TextureLoader();
+
+gltfLoader = new GLTFLoader();
 
 export const skybox = textureLoader.load('imgs/kloppenheim_06_puresky.jpg');
 skybox.colorSpace = THREE.SRGBColorSpace;

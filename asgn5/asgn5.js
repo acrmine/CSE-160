@@ -3,13 +3,18 @@ import * as Shapes from './Shapes.js';
 import * as Textures from './Init.js';
 import { Player } from './Player.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 let player;
 
 let spinningDodecahedron;
 
 let pointLight;
+
+let monsterGltf = await gltfLoader.loadAsync('models/char-monster_1.glb');
+monsterGltf.scene.position.set(0, 0, -150);
+monsterGltf.scene.rotation.set(0, -Math.PI / 2, 0);
+monsterGltf.scene.scale.set(80, 80, 80);
+scene.add(monsterGltf.scene);
 
 function buildCubeWall(startX, startY, startZ, rows, cols) {
   for (let i = 0; i < rows; i++) {

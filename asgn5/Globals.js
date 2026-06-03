@@ -13,6 +13,7 @@ let scene;
 let phys_world;
 let renderer;
 let textureLoader;
+let gltfLoader;
 
 let g_prevTime = performance.now();
 let g_frameCount = 0;
